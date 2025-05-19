@@ -8,7 +8,7 @@
 class LVprocessing():
 
     #import libraries
-    from brownian_fit_class.brownian_fit import brownian_fit
+    from MRFM_BrownainFit.brownian_fit import brownian_fit
 
 
     def __intit__(self, N_avg:int, temp:float, plot:bool, report:bool, x:list, y:list):

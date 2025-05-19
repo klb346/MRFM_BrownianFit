@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 authors = [
    { name = "Katrina L. Brown", email = "klb346@cornell.edu"},
 ]
-name = "brownian_fit_class"
-version = "0.0.2"
+name = "MRFM_BrownianFit"
+version = "1.0.0"
 dependencies = [
    "numpy == 1.24.4",
    "matplotlib == 3.7.5 ",

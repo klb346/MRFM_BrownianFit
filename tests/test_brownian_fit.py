@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lmfit import Model
-from brownian_fit import brownian_fit
+from MRFM_BrownainFit import brownian_fit
 
 data = brownian_fit("example_brownian_031425.csv")
 

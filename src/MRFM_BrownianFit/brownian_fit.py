@@ -4,10 +4,6 @@
 # Author: Katrina L. Brown
 # 2025/05/04
 ###################################################
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from lmfit import Model
 
 class brownian_fit():
     """
