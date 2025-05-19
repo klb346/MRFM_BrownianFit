@@ -1,5 +1,5 @@
 ###################################################
-# LabVIEW_integration.py
+# LabVIEW_int.py
 # Defines the data class LVprocessing
 # Author: Katrina L. Brown
 # 2025/05/04
@@ -8,7 +8,7 @@
 class LVprocessing():
 
     #import libraries
-    from MRFM_BrownainFit.brownian_fit import brownian_fit
+    from MRFM_BrownianFit.brownian_fit import brownian_fit
 
 
     def __intit__(self, N_avg:int, temp:float, plot:bool, report:bool, x:list, y:list):
