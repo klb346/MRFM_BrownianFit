@@ -170,7 +170,7 @@ class brownian_fit():
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
-    def residuals_CDF(self):
+    def residuals_CDF(self, path=None):
         r1 = self.np.sort(self.residuals)
         r2 = self.np.arange(1, len(r1)+1)/len(r1)
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
@@ -178,10 +178,11 @@ class brownian_fit():
         ax1.set_ylabel('CDF')
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
-        self.plt.savefig(self.res_fig_file)
+        if path != None:
+            self.plt.savefig(path+self.res_fig_file)
         return fig
 
-    def plot_fit(self):
+    def plot_fit(self, path=None):
         """
         The _plot_fit function will plot the cantilever peak with the fit function on a semilog plot,
         and the normalized residuals underneath.
@@ -200,7 +201,8 @@ class brownian_fit():
         ax1.legend(loc='best')
         
         self.plt.tight_layout()
-        self.plt.savefig(self.fig_file)
+        if path != None:
+            self.plt.savefig(path+self.fig_file)
         return fig
     
     def _find_params(self):
@@ -229,8 +231,8 @@ class brownian_fit():
 
         #calc force noise
         kT = 1.38*10**(-23) * self.temp    # N m
-        self.Sx = float(self.result['brownian'].best_values['baseline'])   #pm^2/Hz
-        self.Sx_stderr = float(self.result['brownian'].params['baseline'].stderr)  #pm^2/Hz
+        self.Sx = float(1E-6 *self.result['brownian'].best_values['baseline'])   #nm^2/Hz
+        self.Sx_stderr = float(1E-6 * self.result['brownian'].params['baseline'].stderr)  #nm^2/Hz
         
         self.Sth = float((kT*self.f0)/((0.05E-12)**2 * self.k * 1E03 *self.Q))   #Hz^2/Hz  
         self.Sth_stderr = self.Sth * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2) #Hz^2/Hz  

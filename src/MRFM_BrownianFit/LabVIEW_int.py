@@ -25,13 +25,14 @@ class LVprocessing():
         )
     from datetime import datetime
 
-    def __intit__(self, N_avg:int, temp:float, x:list, y:list, name:str):
+    def __intit__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
         
         self.N_avg = N_avg
         self.temp = temp
         self.name = name
         self.x = x
         self.y = y
+        self.path = path
 
     def _compile_for_fitting(self):
         self.datatuple = tuple(self.N_avg, self.temp, self.x, self.y, self.name)
@@ -66,7 +67,7 @@ class LVprocessing():
         #add time stamp to top of doc
         today = self.datetime.now().replace(microsecond=0)
         fd = today.strftime("%Y-%m-%d %H:%M:%S")
-        doc.append(str(today))
+        doc.append(str(fd))
         
         #section header - Fit Report
         with doc.create(self.Section("Brownian Motion Fit Report")):
@@ -97,7 +98,7 @@ class LVprocessing():
                 #gamma with error - friction coefficent
                 doc.append(self.NoEscape("$\Gamma =$ " + str(self.fit.result['brownian'].best_values['Gamma']) + "$\pm$" + str(self.fit.result['brownian'].params['Gamma'].stderr) + " N s/m"))
                 #Sx with error -(detector noise floor)
-                doc.append(self.NoEscape("$S_x =$ " + str(self.fit.Sx) + "$\pm$" + str(self.fit.Sx_stderr) + " $pm^2$/Hz"))
+                doc.append(self.NoEscape("$S_x =$ " + str(self.fit.Sx) + "$\pm$" + str(self.fit.Sx_stderr) + " $nm^2$/Hz"))
 
                 #Q with error
                 doc.append(self.NoEscape("$Q =$ " + str(self.fit.Q) + "$\pm$" + str(self.fit.Q_stderr)))
@@ -137,4 +138,4 @@ class LVprocessing():
                 self.fit.residuals_CDF
                 plot.add_plot(width = self.NoEscape(r"1\textwidth"))
         
-        doc.generate_pdf(self.name, clean_tex=False)
+        doc.generate_pdf(self.path+self.name, clean_tex=False)
