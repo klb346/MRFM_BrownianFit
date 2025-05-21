@@ -2,7 +2,7 @@
 # brownian_fit.py
 # Defines the data class brownian_fit
 # Author: Katrina L. Brown
-# 2025/05/04
+# 2025/05/20
 ###################################################
 
 class brownian_fit():
@@ -30,8 +30,9 @@ class brownian_fit():
     #import libraries
     import matplotlib.pyplot as plt
     import numpy as np
-    import pandas as pd
     from lmfit import Model
+    import math as m
+
 
     def __init__(self, data):
         """
@@ -53,6 +54,7 @@ class brownian_fit():
             if tupletypes == [int, float, list, list, str]:
                 self.N_avgs, self.temp, x, y, self.file= data
                 self.fig_file = self.file + ".png"
+                self.res_fig_file = self.file + "_residual_cdf.png"
                 self.x = self.np.array(x)*10**(-3)     # [kHz]
                 self.y = self.np.array(y)*10**(6)      # [pm^2/Hz]
             else:
@@ -73,7 +75,7 @@ class brownian_fit():
         the y-data (the first maximum is at zero).
         """
         #find estimate of canitlever peak (highest non-zero peak)
-        f0_estimate_idx = self.np.where(np.max(self.y[10:]) == self.y)
+        f0_estimate_idx = self.np.where(self.np.max(self.y[10:]) == self.y)
         self.f0_estimate = self.x[f0_estimate_idx]
         
         #truncate to 1000 Hz centered at f0_estimate **frequencies are in kHz
@@ -166,8 +168,20 @@ class brownian_fit():
 
         #calculate residuals
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
+        self.resid_mean = self.np.mean(self.residuals)
 
-    def _plot_fit(self):
+    def residuals_CDF(self):
+        r1 = self.np.sort(self.residuals)
+        r2 = self.np.arange(1, len(r1)+1)/len(r1)
+        fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
+        ax1.plot(r1,r2,'.', color = self.colors["darkmagenta"])
+        ax1.set_ylabel('CDF')
+        ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
+        self.plt.tight_layout()
+        self.plt.savefig(self.res_fig_file)
+        return fig
+
+    def plot_fit(self):
         """
         The _plot_fit function will plot the cantilever peak with the fit function on a semilog plot,
         and the normalized residuals underneath.
@@ -187,37 +201,58 @@ class brownian_fit():
         
         self.plt.tight_layout()
         self.plt.savefig(self.fig_file)
-        self.plt.show()
+        return fig
     
     def _find_params(self):
         """
+        **need to update!!!!
         The _find_params function will calculate the cantilever spring conatant and quality factor and
         store them as self.k and self.Q respectively.
         The resonance frequency in stored in self.f0
         The force noise is found from :math: $frac{kT * \tau_0^2}{(\pi * \tau_0)^4 f_0 ^4}$ and stored
         as self.force_noise.
-        The detector noise is the baseline and is stored as self.detecor_noise
+        The detector noise is the baseline and is stored as self.Sx
         """
-        #calculate cantilever quality factor
-        self.Q = float(self.np.pi*self.result['brownian'].best_values['tau0']*self.result['brownian'].best_values['f0'])
-
         #calculate canilever spring constant in mN/m
         self.f0 = float(1.0E3*self.result['brownian'].best_values['f0'])      # Hz
+        self.f0_stderr = float(1.0E3*self.result['brownian'].params['f0'].stderr) # Hz
+
         self.tau0 = float(1.0E-3*self.result['brownian'].best_values['tau0']) # s
+        self.tau0_stderr = float(1.0E-3*self.result['brownian'].params['tau0'].stderr) # s
+
         self.k = float(2 * self.np.pi**2 * self.f0**2 * self.tau0 * self.result['brownian'].best_values['Gamma'] * 1e3) # mN/m
+        self.k_stderr = self.k * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + (self.f0_stderr/self.f0)**2 + (self.result['brownian'].params['Gamma'].stderr / self.result['brownian'].best_values['Gamma'])**2)
+
+        #calculate cantilever quality factor and propagate error
+        self.Q = float(self.np.pi*self.result['brownian'].best_values['tau0']*self.result['brownian'].best_values['f0'])
+        self.Q_stderr = self.Q * self.m.sqrt((self.tau0_stderr/self.tau0)**2 +(self.f0_stderr/self.f0)**2)
 
         #calc force noise
         kT = 1.38*10**(-23) * self.temp    # N m
-        self.force_noise = float(kT * self.tau0**2 /((self.np.pi * self.tau0)**4 *self.f0**4))
-
-        self.detector_noise = float(self.result['brownian'].best_values['baseline'])
-
-        print("Cantilever quality factor = ", self.Q, " [unitless]")
-        print("Cantilever spring constant = ", self.k, " [mN/m]")
-    
-    # def _report(self):
+        self.Sx = float(self.result['brownian'].best_values['baseline'])   #pm^2/Hz
+        self.Sx_stderr = float(self.result['brownian'].params['baseline'].stderr)  #pm^2/Hz
         
+        self.Sth = float((kT*self.f0)/((0.05E-12)**2 * self.k * 1E03 *self.Q))   #Hz^2/Hz  
+        self.Sth_stderr = self.Sth * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2) #Hz^2/Hz  
+
+        self.Sdet = (self.Sx)/(0.05**2) #Hz^-1
+        self.Sdet_stderr = (self.Sx_stderr)/(0.05**2)  #Hz^-1
+        # print("Cantilever quality factor = ", self.Q, " [unitless]")
+        # print("Cantilever spring constant = ", self.k, " [mN/m]")
+
+        #calc P(0)
+        self.P0 = 1E18 * kT /(self.result['brownian'].best_values['Gamma'] * self.np.pi**4 *self.tau0**2 *self.f0**4) #nm^2/Hz
+        self.P0_stderr = self.P0 * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2 + (self.result['brownian'].params['Gamma'].stderr / self.result['brownian'].best_values['Gamma'])**2) #nm^2/Hz
     
+        #calc intrinsic dissipation
+        self.intrinsic_diss = 1E9 * self.k/(self.Q*2*self.np.pi*self.f0) #pN s/m
+        self.intrinsic_diss_stderr = self.intrinsic_diss * self.m.sqrt((self.k_stderr/self.k)**2 + (self.Q_stderr/self.Q)**2 + (self.f0_stderr/self.f0)**2) #pN s/m
+
+        #calc intrinsic force noise
+        self.intrinsic_force_noise = 1E28 *4 * kT *self.intrinsic_diss #aN^2/Hz
+        self.intrinsic_force_noise_stderr = 1E28 *4 * kT *self.intrinsic_diss_stderr  #aN^2/Hz
+
+
     def do_fit(self):
         """
         The do_fit function will fit on the cantilever peak and store the resulting parameters of
@@ -228,6 +263,5 @@ class brownian_fit():
         self._extract_peak()
         self._fit_power_spec()
         self._find_params()
-        self._plot_fit()
     
 
