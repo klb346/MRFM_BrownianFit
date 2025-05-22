@@ -145,7 +145,7 @@ class brownian_fit():
     def _fit_power_spec(self):
         """
         _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
-        The resuduals of the fit are calculated and saved to self.residuals
+        The residuals of the fit are calculated and saved to self.residuals
         """
         #run fit
         gmodel = self.Model(self._brownian)
@@ -164,8 +164,6 @@ class brownian_fit():
         self.result = {}
         self.result['brownian'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
 
-        self.result['brownian']
-
         #calculate residuals
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
@@ -179,7 +177,7 @@ class brownian_fit():
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
         if path != None:
-            self.plt.savefig(path+self.res_fig_file)
+            self.plt.savefig(path+"\\"self.res_fig_file)
         return fig
 
     def plot_fit(self, path=None):
@@ -202,7 +200,7 @@ class brownian_fit():
         
         self.plt.tight_layout()
         if path != None:
-            self.plt.savefig(path+self.fig_file)
+            self.plt.savefig(path+"\\"+self.fig_file)
         return fig
     
     def _find_params(self):

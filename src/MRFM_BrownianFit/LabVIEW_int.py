@@ -128,14 +128,14 @@ class LVprocessing():
         #section header - Plot fit w/residuals
         with doc.create(self.Section("Brownian Motion Fit Plot")):
             with doc.create(self.Figure(position="htbp")) as plot:
-                self.fit.plot_fit
+                self.fit.plot_fit(path = self.path)
                 plot.add_plot(width = self.NoEscape(r"1\textwidth"))
 
         #section header - Plot the CDF
         with doc.create(self.Section("Brownian Residuals Cumulative Distribution Function Plot")):
             doc.append("Residual average is" + str(self.fit.resid_mean))
             with doc.create(self.Figure(position="htbp")) as plot:
-                self.fit.residuals_CDF
+                self.fit.residuals_CDF(path = self.path)
                 plot.add_plot(width = self.NoEscape(r"1\textwidth"))
         
         doc.generate_tex(self.save)
