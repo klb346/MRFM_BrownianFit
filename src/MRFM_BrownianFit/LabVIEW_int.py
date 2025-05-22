@@ -32,7 +32,7 @@ class LVprocessing():
         self.name = name
         self.x = x
         self.y = y
-        self.path = path
+        self.save = str(path +'\\'+ name)
 
     def _compile_for_fitting(self):
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
@@ -62,7 +62,7 @@ class LVprocessing():
         self.fit._find_params()
 
         ##build the report using pylatex
-        doc = self.Document(self.name, geometry_options = {"right": "2cm", "left": "2cm"})
+        doc = self.Document(self.save, geometry_options = {"right": "2cm", "left": "2cm"})
         
         #add time stamp to top of doc
         today = self.datetime.now().replace(microsecond=0)
@@ -138,4 +138,4 @@ class LVprocessing():
                 self.fit.residuals_CDF
                 plot.add_plot(width = self.NoEscape(r"1\textwidth"))
         
-        doc.generate_tex(self.path+self.name)
+        doc.generate_tex(self.save)
