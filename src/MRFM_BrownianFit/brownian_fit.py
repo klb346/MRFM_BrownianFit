@@ -154,7 +154,7 @@ class brownian_fit():
 
         #define inital guess of resnoance frequency and noise floor
         noise_floor = self._baseline_avg()
-        f0_idx, = self.np.where(self.y_trunc == np.max(self.y_trunc))
+        f0_idx, = self.np.where(self.y_trunc == self.np.max(self.y_trunc))
         f0_init = self.x_trunc[f0_idx]
 
         #initalize the parameters for lmfit
