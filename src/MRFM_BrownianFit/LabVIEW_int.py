@@ -123,7 +123,7 @@ class LVprocessing():
 
             #the fit report
             with doc.create(self.Subsection("LMFit Full Report")):
-                doc.append(self.fit.result.fit_report())
+                doc.append(self.fit.result['brownian'].fit_report())
 
         #section header - Plot fit w/residuals
         with doc.create(self.Section("Brownian Motion Fit Plot")):
