@@ -138,4 +138,4 @@ class LVprocessing():
                 self.fit.residuals_CDF
                 plot.add_plot(width = self.NoEscape(r"1\textwidth"))
         
-        doc.generate_pdf(self.path+self.name, clean_tex=False, compiler = 'pdflatex')
+        doc.generate_tex(self.path+self.name)
