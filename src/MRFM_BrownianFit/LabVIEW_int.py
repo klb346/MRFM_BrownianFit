@@ -35,7 +35,7 @@ class LVprocessing():
         self.path = path
 
     def _compile_for_fitting(self):
-        self.datatuple = tuple(self.N_avg, self.temp, self.x, self.y, self.name)
+        self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
         self._compile_for_fitting()
