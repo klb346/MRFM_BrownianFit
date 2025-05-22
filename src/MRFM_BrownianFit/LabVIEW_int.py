@@ -25,7 +25,7 @@ class LVprocessing():
         )
     from datetime import datetime
 
-    def __intit__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
+    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
         
         self.N_avg = N_avg
         self.temp = temp
