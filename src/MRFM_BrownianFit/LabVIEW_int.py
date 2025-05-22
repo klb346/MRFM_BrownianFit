@@ -32,6 +32,7 @@ class LVprocessing():
         self.name = name
         self.x = x
         self.y = y
+        self.path = path
         self.save = str(path +'\\'+ name)
 
     def _compile_for_fitting(self):
