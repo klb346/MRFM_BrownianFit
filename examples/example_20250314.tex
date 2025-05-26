@@ -1,0 +1,140 @@
+\documentclass{article}%
+\usepackage[T1]{fontenc}%
+\usepackage[utf8]{inputenc}%
+\usepackage{lmodern}%
+\usepackage{textcomp}%
+\usepackage{lastpage}%
+\usepackage{geometry}%
+\geometry{right=2cm,left=2cm}%
+\usepackage{graphicx}%
+%
+%
+%
+\begin{document}%
+\normalsize%
+2025{-}05{-}23 09:55:22%
+\section{Brownian Motion Fit Report}%
+\label{sec:BrownianMotionFitReport}%
+\subsection{Summary}%
+\label{subsec:Summary}%
+The position-fluctuation power spectrum was fit to the equation:%
+\newline%
+%
+$P(f) = \frac{kT \tau_0^2}{\Gamma}\frac{1}{(\pi\tau_0)^4(f_0^2-f^2)^2+(\pi\tau_0)^2f^2} + S_{x}$%
+\newline%
+%
+From the optimized fit paramters $\tau_{0}$, $f_{0}$, $/Gamma$, and $S_{x}$:%
+\newline%
+%
+$Q = \pi \tau_0 f_0$%
+\newline%
+%
+$k = 2 \pi^2 f_0^2 \tau_0 \Gamma$%
+\newline%
+%
+$S_th = frac{kT * \tau_0^2}{(\pi * \tau_0)^4 f_0 ^4}$%
+\newline%
+%
+$S_det = frac{S_x}{z_{rms}^2}$ where $z_{rms} = 0.05 pm$%
+\newline%
+%
+N\_avgs = 16%
+\newline%
+%
+Temperature = 294.5 K%
+\newline%
+%
+Power Spectrum fit to frequency range 8.482 to 9.4815 Hz%
+\newline%
+%
+From curve fitting the position{-}fluctuation power spectrum:%
+\newline%
+%
+$\tau_0 =$ 0.24770518697441807$\pm$0.02188385057856342 s%
+\newline%
+%
+$f_0 =$ 8981.898539121574$\pm$0.07019951015545005 Hz%
+\newline%
+%
+$\Gamma =$ 1.515564933226328e-11$\pm$2.644398876667531e-12 N s/m%
+\newline%
+%
+$S_x =$ 1.97994654905178e-05$\pm$1.583900551317654e-07 $nm^2$/Hz%
+\newline%
+%
+$Q =$ 6989.612806853685$\pm$617.5068222594293%
+\newline%
+%
+$P_0 =$ 6989.612806853685$\pm$617.5068222594293%
+\newline%
+%
+From analysis of the area under the position{-}fluctuation power spectrum:%
+\newline%
+%
+$k =$ 6.8936235777023634e-09$\pm$1.4793911507159177e-09 $nm^2$/Hz%
+\newline%
+%
+Intrinsic dissapation = 15.15564933226328$\pm$3.5172685071627865 pN s/m%
+\newline%
+%
+Intrinsic force noise = 2463762978.0500474$\pm$571781237.5984111 $aN^2$/Hz%
+\newline%
+%
+Predicted frequency noise:%
+\newline%
+%
+$z_{rms} =$ 50nm%
+\newline%
+%
+$S_{th} =$ 349.4328444592086$\pm$43.65835466862354 $Hz^2$/Hz%
+\newline%
+%
+$S_{det} =$ 0.007919786196207118$\pm$6.335602205270615e-05 Hz%
+\newline%
+
+%
+\subsection{LMFit Full Report}%
+\label{subsec:LMFitFullReport}%
+[[Model]]
+    Model(_brownian)
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 36
+    # data points      = 2000
+    # variables        = 4
+    chi-square         = 2197.19094
+    reduced chi-square = 1.10079707
+    Akaike info crit   = 196.065041
+    Bayesian info crit = 218.468651
+    R-squared          = 0.91989682
+[[Variables]]
+    Gamma:     1.5156e-11 +/- 2.6444e-12 (17.45%) (init = 1e-11)
+    tau0:      247.705187 +/- 21.8838506 (8.83%) (init = 200)
+    f0:        8.98189854 +/- 7.0200e-05 (0.00%) (init = 8.982)
+    baseline:  19.7994655 +/- 0.15839006 (0.80%) (init = 22.60808)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(Gamma, tau0) = -0.9946
+
+%
+\section{Brownian Motion Fit Plot}%
+\label{sec:BrownianMotionFitPlot}%
+
+
+\begin{figure}[htbp]%
+\centering%
+\includegraphics[width=1\textwidth]{.///example_20250314_residual_cdf.png}%
+\end{figure}
+
+%
+\section{Brownian Residuals Cumulative Distribution Function Plot}%
+\label{sec:BrownianResidualsCumulativeDistributionFunctionPlot}%
+Residual average is0.27464884097631154%
+
+
+\begin{figure}[htbp]%
+\centering%
+\includegraphics[width=1\textwidth]{.///example_20250314.png}%
+\end{figure}
+
+%
+\end{document}
