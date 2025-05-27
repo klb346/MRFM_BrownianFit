@@ -241,7 +241,7 @@ class brownian_fit():
         # print("Cantilever spring constant = ", self.k, " [mN/m]")
 
         #calc P(0)
-        self.P0 = 1E18 * kT /(self.result['brownian'].best_values['Gamma'] * self.np.pi**4 *self.tau0**2 *self.f0**4) #nm^2/Hz
+        self.P0 = float(1E18 * kT /(self.result['brownian'].best_values['Gamma'] * self.np.pi**4 *self.tau0**2 *self.f0**4)) #nm^2/Hz
         self.P0_stderr = self.P0 * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2 + (self.result['brownian'].params['Gamma'].stderr / self.result['brownian'].best_values['Gamma'])**2) #nm^2/Hz
     
         #calc intrinsic dissipation
@@ -249,8 +249,8 @@ class brownian_fit():
         self.intrinsic_diss_stderr = self.intrinsic_diss * self.m.sqrt((self.k_stderr/self.k)**2 + (self.Q_stderr/self.Q)**2 + (self.f0_stderr/self.f0)**2) #pN s/m
 
         #calc intrinsic force noise
-        self.intrinsic_force_noise = 1E28 *4 * kT *self.intrinsic_diss #aN^2/Hz
-        self.intrinsic_force_noise_stderr = 1E28 *4 * kT *self.intrinsic_diss_stderr  #aN^2/Hz
+        self.intrinsic_force_noise = float(1E28 *4 * kT *self.intrinsic_diss) #aN^2/Hz
+        self.intrinsic_force_noise_stderr = float(1E28 *4 * kT *self.intrinsic_diss_stderr)  #aN^2/Hz
 
 
     def do_fit(self):
