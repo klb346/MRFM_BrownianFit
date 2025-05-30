@@ -75,8 +75,8 @@ class brownian_fit():
         the y-data (the first maximum is at zero).
         """
         #find estimate of canitlever peak (highest non-zero peak)
-        f0_estimate_idx = self.np.where(self.np.max(self.y[10:]) == self.y)
-        self.f0_estimate = self.x[f0_estimate_idx]
+        f0_estimate_idx, = self.np.where(self.np.max(self.y[10:]) == self.y)
+        self.f0_estimate = float(self.x[f0_estimate_idx[0]])
         
         #truncate to 1000 Hz centered at f0_estimate **frequencies are in kHz
         upper = self.f0_estimate + 0.500
