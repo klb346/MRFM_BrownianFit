@@ -74,21 +74,32 @@ class brownian_fit():
         centered at the cantiliever peak which is found by finding the second maxium in
         the y-data (the first maximum is at zero).
         """
+
+
         #find estimate of canitlever peak (highest non-zero peak)
-        f0_estimate_idx, = self.np.where(self.np.max(self.y[10:]) == self.y)
-        self.f0_estimate = float(self.x[f0_estimate_idx[0]])
+        f0_estimate_idx, = self.np.where(self.np.isclose(self.np.max(self.y[10:]), self.y, rtol=0.001))
+        self.f0_estimate = float(self.x[int(f0_estimate_idx[0])])
         
         #truncate to 1000 Hz centered at f0_estimate **frequencies are in kHz
-        upper = self.f0_estimate + 0.500
-        lower = self.f0_estimate - 0.500
+        #given that sampling is every 0.5 Hz, can do this by index
+        
+        # upper = self.f0_estimate + 0.500
+        # lower = self.f0_estimate - 0.500
 
-        #find indices of upper and lower
-        idx_u, = self.np.where(self.np.isclose(self.x,upper))
-        idx_l, = self.np.where(self.np.isclose(self.x,lower))
+        # #raise TypeError(len(self.x),len(self.y), self.f0_estimate)
+
+        # #find indices of upper and lower
+        # idx_u, = self.np.where(self.np.isclose(self.x,upper, atol = 0.0005))
+        # idx_l, = self.np.where(self.np.isclose(self.x,lower, atol = 0.0005))
+
+        #raise TypeError(len(idx_u),len(idx_l), idx_u, idx_l)
+    
+        idx_u = int(f0_estimate_idx[0]) + 1000
+        idx_l = int(f0_estimate_idx[0]) - 1000
 
         #truncate data set to indices
-        self.x_trunc = self.x[idx_l[0]:idx_u[0]]
-        self.y_trunc = self.y[idx_l[0]:idx_u[0]]
+        self.x_trunc = self.x[idx_l:idx_u]
+        self.y_trunc = self.y[idx_l:idx_u]
 
     def plot_peak(self):
         """
