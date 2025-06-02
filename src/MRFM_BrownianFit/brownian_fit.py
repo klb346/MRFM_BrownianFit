@@ -188,7 +188,7 @@ class brownian_fit():
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(figpath+"\\"+self.res_fig_file)
+            self.plt.savefig(figpath + str("\\")+ self.res_fig_file)
         return fig
 
     def plot_fit(self, figpath=None):
@@ -211,11 +211,7 @@ class brownian_fit():
         
         self.plt.tight_layout()
         if figpath != None:
-<<<<<<< HEAD
-            self.plt.savefig(figpath+"\"+self.fig_file)
-=======
-            self.plt.savefig(figpath+ r"\\" + self.fig_file)
->>>>>>> 60fe386bb69ad864ecef494a9f22579381890526
+            self.plt.savefig(figpath+  + str("\\") + self.fig_file)
         return fig
     
     def _find_params(self):
