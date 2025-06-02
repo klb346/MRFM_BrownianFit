@@ -200,7 +200,7 @@ class brownian_fit():
         
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(figpath+"\\"+self.fig_file)
+            self.plt.savefig(figpath+ r"\\" + self.fig_file)
         return fig
     
     def _find_params(self):
