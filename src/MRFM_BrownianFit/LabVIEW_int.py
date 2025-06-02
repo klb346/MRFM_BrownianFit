@@ -156,13 +156,13 @@ class LVprocessing():
         with doc.create(self.Section("Brownian Motion Fit Plot")):
             with doc.create(self.Figure(position="htbp")) as plot:
                 self.fit.plot_fit(figpath = self.path)
-                plot.add_image(filename = self.path+"\\"+self.name+"_residual_cdf.png",width = self.NoEscape(r"1\textwidth"))
+                plot.add_image(filename = self.path+"\\"+self.name+".png",width = self.NoEscape(r"1\textwidth"))
 
         #section header - Plot the CDF
         with doc.create(self.Section("Brownian Residuals Cumulative Distribution Function Plot")):
             doc.append("Residual average is" + str(self.fit.resid_mean))
             with doc.create(self.Figure(position="htbp")) as plot:
                 self.fit.residuals_CDF(figpath = self.path)
-                plot.add_image(filename = self.path+"\\"+self.name+".png",width = self.NoEscape(r"1\textwidth"))
+                plot.add_image(filename = self.path+"\\"+self.name+"_residual_cdf.png",width = self.NoEscape(r"1\textwidth"))
         
         doc.generate_tex(self.save)
