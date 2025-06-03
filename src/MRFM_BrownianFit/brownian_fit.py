@@ -275,5 +275,6 @@ class brownian_fit():
         self._extract_peak()
         self._fit_power_spec()
         self._find_params()
+        self.fit_y = self.np.array(self.result['brownian'].best_fit)
     
 
