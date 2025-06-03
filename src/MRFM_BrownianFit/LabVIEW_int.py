@@ -54,7 +54,6 @@ class LVprocessing():
         self.fit._extract_peak()
         self.fit._fit_power_spec()
         self.fit._find_params()
-        self.fit.plot_fit
 
     def plot_report(self):
         self._call_fitting_class()
