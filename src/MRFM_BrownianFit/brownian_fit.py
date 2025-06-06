@@ -186,6 +186,7 @@ class brownian_fit():
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
+        # calculate residual CDF
         self.r1 = self.np.sort(self.residuals)
         self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
 
