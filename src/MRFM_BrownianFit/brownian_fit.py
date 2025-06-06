@@ -38,6 +38,8 @@ class brownian_fit():
     from lmfit import Model
     import math as m
     import os
+    import scipy.stats as ss
+    import scipy.special as ssp
 
 
     def __init__(self, data):
@@ -186,15 +188,21 @@ class brownian_fit():
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
+
         # calculate residual CDF
         self.r1 = self.np.sort(self.residuals)
         self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
 
+        # calculate normal CDF
+        
+        self.norm_cdf = (1 + self.ssp.erf(self.r1/self.np.sqrt(2)))/2
+
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
-        ax1.plot(self.r1,self.r2,'.', color = self.colors["darkmagenta"])
+        ax1.plot(self.r1, self.norm_cdf, "-", color = self.colors["pink"])
+        ax1.plot(self.r1,self.r2,'.', color = self.colors["magenta"])
         ax1.set_ylabel('CDF')
-        ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
+        ax1.set_xlabel('Normalized Residual [pm$^2$/Hz]')
         self.plt.tight_layout()
         if figpath != None:
             self.plt.savefig(self.os.path.join(figpath,self.res_fig_file))
