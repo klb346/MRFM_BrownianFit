@@ -194,12 +194,12 @@ class brownian_fit():
         self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
 
         # calculate normal CDF
-        
-        self.norm_cdf = (1 + self.ssp.erf(self.r1/self.np.sqrt(2)))/2
+        self.x_range = self.np.linspace(-10,10,10000)
+        self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
-        ax1.plot(self.r1, self.norm_cdf, "-", color = self.colors["pink"])
+        ax1.plot(self.x_range, self.norm_cdf, "-", color = self.colors["pink"])
         ax1.plot(self.r1,self.r2,'.', color = self.colors["magenta"])
         ax1.set_ylabel('CDF')
         ax1.set_xlabel('Normalized Residual [pm$^2$/Hz]')
