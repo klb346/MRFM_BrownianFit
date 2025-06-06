@@ -1,6 +1,7 @@
 ###################################################
 # LabVIEW_int.py
-# Defines the data class LVprocessing
+# Defines the data class LVprocessing to format the brownian motion VI data to pass to brownian_fit.
+# Also generates a reoprt in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
 # Author: Katrina L. Brown
 # 2025/05/20
 ###################################################
@@ -24,7 +25,7 @@ class LVprocessing():
         TikZ,
         )
     from datetime import datetime
-    import os.path as path
+    import os
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
         
@@ -34,9 +35,12 @@ class LVprocessing():
         self.x = x
         self.y = y
         self.path = path
-        self.save = str(self.path.join(path, name))
+        self.save = str(self.os.path.join(path, name))
 
     def _compile_for_fitting(self):
+        """
+        Puts data in properly formatted tuple to pass to brownian_fit
+        """
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
@@ -48,7 +52,6 @@ class LVprocessing():
         The do_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
         fit report can be found from self.result['brownian'].
-        The cantilever peak is plotted with the fit function, and the resisuals are plotted below.
         """
         self._call_fitting_class()
 
@@ -57,6 +60,15 @@ class LVprocessing():
         self.fit._find_params()
 
     def plot_report(self):
+        """
+        The plot_fit function will fit on the cantilever peak and store the resulting parameters of
+        interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
+        fit report can be found from self.result['brownian'].
+        A .tex file is generated summarizing the result of the fit. Two figures are included: the 
+        cantilever peak data and fit with normalized residuals below, and the cumulative distribution 
+        function of the normalized residuals.
+        
+        """
         self._call_fitting_class()
 
         self.fit._extract_peak()

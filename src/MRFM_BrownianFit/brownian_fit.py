@@ -24,7 +24,12 @@ class brownian_fit():
     The do_fit function will fit on the cantilever peak and store the resulting parameters of
     interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
     fit report can be found from self.result['brownian'].
-    The cantilever peak is plotted with the fit function, and the resisuals are plotted below.
+
+    The plot_fit function will gnereate a figure with the cantilever peak plotted with the fit 
+    function, and the resisuals plotted below.
+
+    The residuals_CDF funciton will plot the cumulative distribution function of the normalized 4
+    residuals **on top of the expected CDF for a normal discibution
 
     """
     #import libraries
@@ -32,7 +37,7 @@ class brownian_fit():
     import numpy as np
     from lmfit import Model
     import math as m
-    import os.path as path
+    import os
 
 
     def __init__(self, data):
@@ -189,7 +194,7 @@ class brownian_fit():
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(self.path.join(figpath,self.res_fig_file))
+            self.plt.savefig(self.os.path.join(figpath,self.res_fig_file))
         return fig
 
     def plot_fit(self, figpath=None):
@@ -212,7 +217,7 @@ class brownian_fit():
         
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(self.path.join(figpath, self.fig_file))
+            self.plt.savefig(self.os.path.join(figpath, self.fig_file))
         self.plt.show()
         # return fig
     
@@ -271,7 +276,7 @@ class brownian_fit():
         The do_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
         fit report can be found from self.result['brownian'].
-        The cantilever peak is plotted with the fit function, and the resisuals are plotted below.
+
         """
         self._extract_peak()
         self._fit_power_spec()
