@@ -180,6 +180,7 @@ class brownian_fit():
         #run the fit
         self.result = {}
         self.result['brownian'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
+        self.fit_y = self.np.array(self.result['brownian'].best_fit)
 
         #calculate residuals
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
@@ -281,6 +282,5 @@ class brownian_fit():
         self._extract_peak()
         self._fit_power_spec()
         self._find_params()
-        self.fit_y = self.np.array(self.result['brownian'].best_fit)
     
 
