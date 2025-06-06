@@ -24,6 +24,7 @@ class LVprocessing():
         TikZ,
         )
     from datetime import datetime
+    import os.path as path
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
         
@@ -33,7 +34,7 @@ class LVprocessing():
         self.x = x
         self.y = y
         self.path = path
-        self.save = str(path +'\\'+ name)
+        self.save = str(self.path.join(path, name))
 
     def _compile_for_fitting(self):
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
@@ -156,13 +157,13 @@ class LVprocessing():
         with doc.create(self.Section("Brownian Motion Fit Plot")):
             with doc.create(self.Figure(position="htbp")) as plot:
                 self.fit.plot_fit(figpath = self.path)
-                plot.add_image(filename = self.path+"\\"+self.name+".png",width = self.NoEscape(r"1\textwidth"))
+                plot.add_image(filename = self.save + ".png", width = self.NoEscape(r"1\textwidth"))
 
         #section header - Plot the CDF
         with doc.create(self.Section("Brownian Residuals Cumulative Distribution Function Plot")):
             doc.append("Residual average is" + str(self.fit.resid_mean))
             with doc.create(self.Figure(position="htbp")) as plot:
                 self.fit.residuals_CDF(figpath = self.path)
-                plot.add_image(filename = self.path+"\\"+self.name+"_residual_cdf.png",width = self.NoEscape(r"1\textwidth"))
+                plot.add_image(filename = self.save + "_residual_cdf.png", width = self.NoEscape(r"1\textwidth"))
         
         doc.generate_tex(self.save)

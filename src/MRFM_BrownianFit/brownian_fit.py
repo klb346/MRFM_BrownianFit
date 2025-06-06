@@ -32,6 +32,7 @@ class brownian_fit():
     import numpy as np
     from lmfit import Model
     import math as m
+    import os.path as path
 
 
     def __init__(self, data):
@@ -188,7 +189,7 @@ class brownian_fit():
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(figpath + str("\\")+ self.res_fig_file)
+            self.plt.savefig(self.path.join(figpath,self.res_fig_file))
         return fig
 
     def plot_fit(self, figpath=None):
@@ -211,7 +212,7 @@ class brownian_fit():
         
         self.plt.tight_layout()
         if figpath != None:
-            self.plt.savefig(figpath + str("\\") + self.fig_file)
+            self.plt.savefig(self.path.join(figpath, self.fig_file))
         self.plt.show()
         # return fig
     
