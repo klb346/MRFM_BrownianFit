@@ -186,11 +186,12 @@ class brownian_fit():
         self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
+        self.r1 = self.np.sort(self.residuals)
+        self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
+
     def residuals_CDF(self, figpath=None):
-        r1 = self.np.sort(self.residuals)
-        r2 = self.np.arange(1, len(r1)+1)/len(r1)
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
-        ax1.plot(r1,r2,'.', color = self.colors["darkmagenta"])
+        ax1.plot(self.r1,self.r2,'.', color = self.colors["darkmagenta"])
         ax1.set_ylabel('CDF')
         ax1.set_ylabel('Normalized Residuals\n[pm$^2$/Hz]')
         self.plt.tight_layout()
