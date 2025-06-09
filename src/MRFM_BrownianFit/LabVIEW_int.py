@@ -26,8 +26,9 @@ class LVprocessing():
         )
     from datetime import datetime
     import os
+    import warnings
 
-    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str):
+    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
         
         self.N_avg = N_avg
         self.temp = temp
@@ -36,6 +37,24 @@ class LVprocessing():
         self.y = y
         self.path = path
         self.save = str(self.os.path.join(path, name))
+
+        # print(fit_range_L, fit_range_U)
+        
+        if fit_range_L != None and fit_range_U != None:
+
+            if fit_range_L > fit_range_U:
+                hold = fit_range_U
+                fit_range_U = fit_range_L
+                fit_range_L = hold
+                del hold
+
+            self.fit_range_L = fit_range_L/1000 #kHz
+            self.fit_range_U = fit_range_U/1000 #kHz
+        
+        else:
+        # deal with errors
+            if (((fit_range_U == None) and (fit_range_L != None)) or ((fit_range_U != None) and (fit_range_L == None))):
+                self.warnings.warn("Both ends of the fit range must be specified, performing auto-fit")
 
     def _compile_for_fitting(self):
         """
@@ -55,7 +74,7 @@ class LVprocessing():
         """
         self._call_fitting_class()
 
-        self.fit._extract_peak()
+        self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
         self.fit._fit_power_spec()
         self.fit._find_params()
 
@@ -71,7 +90,7 @@ class LVprocessing():
         """
         self._call_fitting_class()
 
-        self.fit._extract_peak()
+        self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
         self.fit._fit_power_spec()
         self.fit._find_params()
 
