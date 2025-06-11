@@ -55,6 +55,9 @@ class LVprocessing():
         # deal with errors
             if (((fit_range_U == None) and (fit_range_L != None)) or ((fit_range_U != None) and (fit_range_L == None))):
                 self.warnings.warn("Both ends of the fit range must be specified, performing auto-fit")
+            
+            self.fit_range_L = fit_range_L
+            self.fit_range_U = fit_range_U
 
     def _compile_for_fitting(self):
         """
