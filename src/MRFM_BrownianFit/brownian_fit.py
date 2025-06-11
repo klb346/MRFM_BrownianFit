@@ -91,6 +91,7 @@ class brownian_fit():
             idx_l=int(idx_l_hold[0])
             del idx_l_hold
             del idx_u_hold
+            
         else:
             #auto-fit
             #find estimate of canitlever peak (highest non-zero peak)
