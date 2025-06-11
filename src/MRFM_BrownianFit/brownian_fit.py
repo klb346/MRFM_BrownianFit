@@ -61,6 +61,9 @@ class brownian_fit():
             tupletypes = list(map(type, data))
             if tupletypes == [int, float, list, list, str]:
                 self.N_avgs, self.temp, x, y, self.file= data
+
+                raise ValueError(len(x), len(y))
+
                 self.fig_file = self.file + ".png"
                 self.res_fig_file = self.file + "_residual_cdf.png"
                 self.x = self.np.array(x)*10**(-3)     # [kHz]
