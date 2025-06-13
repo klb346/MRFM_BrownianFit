@@ -30,7 +30,7 @@ class LVprocessing():
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
         
-        raise ValueError(len(y), len(x))
+        # raise ValueError(len(y), len(x))
 
         self.N_avg = N_avg
         self.temp = temp

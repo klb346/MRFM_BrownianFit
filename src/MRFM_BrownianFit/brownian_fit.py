@@ -40,6 +40,7 @@ class brownian_fit():
     import os
     import scipy.stats as ss
     import scipy.special as ssp
+    import warnings
 
 
     def __init__(self, data):
@@ -62,12 +63,12 @@ class brownian_fit():
             if tupletypes == [int, float, list, list, str]:
                 self.N_avgs, self.temp, x, y, self.file= data
 
-                raise ValueError(len(x), len(y))
+                # raise ValueError(len(x), len(y))
 
                 self.fig_file = self.file + ".png"
                 self.res_fig_file = self.file + "_residual_cdf.png"
                 self.x = self.np.array(x)*10**(-3)     # [kHz]
-                self.y = self.np.array(y)*10**(6)      # [pm^2/Hz]
+                self.y = self.np.array(y, dtype = float)*1E6      # [pm^2/Hz]
             else:
                 raise ValueError("Expecting a 5 element tuple with dtypes (int, float, list, list, str) but got "+str(tupletypes))
         else:
@@ -88,17 +89,19 @@ class brownian_fit():
 
         if (rangeL != None) and (rangeU != None):
             # manual-fit
-            idx_u_hold, = self.np.where(self.np.isclose(rangeU, self.x, atol=0.0001))
-            idx_l_hold, = self.np.where(self.np.isclose(rangeL, self.x, atol=0.0001))
-            idx_u=int(idx_u_hold[0])
-            idx_l=int(idx_l_hold[0])
+            idx_u_hold, = self.np.where(self.np.isclose(rangeU, self.x, atol=0.0005, rtol = 0))
+            idx_l_hold, = self.np.where(self.np.isclose(rangeL, self.x, atol=0.0004, rtol = 0))
+            # raise ValueError(str(self.np.shape(idx_u_hold))+str(self.np.shape(idx_l_hold)))
+            idx_u=int(idx_u_hold)
+            idx_l=int(idx_l_hold)
             del idx_l_hold
             del idx_u_hold
             
         else:
             #auto-fit
             #find estimate of canitlever peak (highest non-zero peak)
-            f0_estimate_idx, = self.np.where(self.np.isclose(self.np.max(self.y[10:]), self.y, rtol=0.001))
+            f0_estimate_idx, = self.np.where(self.np.isclose(self.np.max(self.y[10:]), self.y, atol=0.01))
+            raise ValueError(str(self.np.shape(f0_estimate_idx)))
             self.f0_estimate = float(self.x[int(f0_estimate_idx[0])])
             
             #truncate to 1000 Hz centered at f0_estimate **frequencies are in kHz
@@ -107,8 +110,8 @@ class brownian_fit():
             # upper = self.f0_estimate + 0.500
             # lower = self.f0_estimate - 0.500
         
-            idx_u = int(f0_estimate_idx[0]) + 1000
-            idx_l = int(f0_estimate_idx[0]) - 1000
+            idx_u = int(f0_estimate_idx) + 1000
+            idx_l = int(f0_estimate_idx) - 1000
 
         #truncate data set to indices
         self.x_trunc = self.x[idx_l:idx_u]
@@ -178,7 +181,10 @@ class brownian_fit():
 
         #define inital guess of resnoance frequency and noise floor
         noise_floor = self._baseline_avg()
-        f0_idx, = self.np.where(self.y_trunc == self.np.max(self.y_trunc))
+        raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
+    
+        f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
+        raise ValueError(self.np.shape(f0_idx))
         f0_init = self.x_trunc[f0_idx]
 
         #initalize the parameters for lmfit
