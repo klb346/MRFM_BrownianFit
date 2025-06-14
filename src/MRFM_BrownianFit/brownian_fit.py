@@ -88,19 +88,14 @@ class brownian_fit():
         """
 
         if (rangeL != None) and (rangeU != None):
-            # manual-fit
-            idx_u_hold, = self.np.where(self.np.isclose(rangeU, self.x, atol=0.0005, rtol = 0))
-            idx_l_hold, = self.np.where(self.np.isclose(rangeL, self.x, atol=0.0004, rtol = 0))
-            # raise ValueError(str(self.np.shape(idx_u_hold))+str(self.np.shape(idx_l_hold)))
-            idx_u=int(idx_u_hold)
-            idx_l=int(idx_l_hold)
-            del idx_l_hold
-            del idx_u_hold
-            
+            # manual-fit fit whole data range
+            idx_u=-1
+            idx_l=0
         else:
             #auto-fit
             #find estimate of canitlever peak (highest non-zero peak)
-            f0_estimate_idx, = self.np.where(self.np.isclose(self.np.max(self.y[10:]), self.y, atol=0.01))
+            # raise ValueError(self.np.shape(self.y), len(self.y), type(self.y))
+            f0_estimate_idx = self.np.argmax(self.y)
             # raise ValueError(str(self.np.shape(f0_estimate_idx)))
             self.f0_estimate = float(self.x[int(f0_estimate_idx)])
             
@@ -112,11 +107,15 @@ class brownian_fit():
         
             idx_u = int(f0_estimate_idx) + 1000
             idx_l = int(f0_estimate_idx) - 1000
+            if idx_l < 0:
+                idx_l = 0
+            if (idx_u+1) > len(self.y):
+                idx_u = -1
 
         #truncate data set to indices
         self.x_trunc = self.x[idx_l:idx_u]
         self.y_trunc = self.y[idx_l:idx_u]
-        raise ValueError(len(self.y_trunc))
+        # raise ValueError(len(self.y_trunc), f0_estimate_idx, idx_l, idx_u)
 
     def plot_peak(self):
         """
@@ -182,10 +181,10 @@ class brownian_fit():
 
         #define inital guess of resnoance frequency and noise floor
         noise_floor = self._baseline_avg()
-        raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
+        # raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
     
         f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
-        raise ValueError(self.np.shape(f0_idx))
+        # raise ValueError(self.np.shape(f0_idx))
         f0_init = self.x_trunc[f0_idx]
 
         #initalize the parameters for lmfit
