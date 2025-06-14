@@ -101,8 +101,8 @@ class brownian_fit():
             #auto-fit
             #find estimate of canitlever peak (highest non-zero peak)
             f0_estimate_idx, = self.np.where(self.np.isclose(self.np.max(self.y[10:]), self.y, atol=0.01))
-            raise ValueError(str(self.np.shape(f0_estimate_idx)))
-            self.f0_estimate = float(self.x[int(f0_estimate_idx[0])])
+            # raise ValueError(str(self.np.shape(f0_estimate_idx)))
+            self.f0_estimate = float(self.x[int(f0_estimate_idx)])
             
             #truncate to 1000 Hz centered at f0_estimate **frequencies are in kHz
             #given that sampling is every 0.5 Hz, can do this by index
@@ -116,6 +116,7 @@ class brownian_fit():
         #truncate data set to indices
         self.x_trunc = self.x[idx_l:idx_u]
         self.y_trunc = self.y[idx_l:idx_u]
+        raise ValueError(len(self.y_trunc))
 
     def plot_peak(self):
         """
@@ -304,4 +305,10 @@ class brownian_fit():
         self._fit_power_spec()
         self._find_params()
     
+    # define functions for bayesian fit - do NOT change previous functions
 
+    # def bayesian_fit(self):
+    #     self.do_fit()
+
+    #     sigma = self.np.sqrt(1/self.N_avgs)*self.result['brownian'].best_fit
+    #     log_L = self.np.sum(self.np.log(1/self.np.sqrt(2*self.np.pi*sigma**2))*np.ones_like(x))+np.sum(-((_particle_model(x,w)-s)**2/(2*sigma**2)), 1)
