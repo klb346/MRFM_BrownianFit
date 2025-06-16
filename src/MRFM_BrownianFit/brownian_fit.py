@@ -169,15 +169,16 @@ class brownian_fit():
 
         return P + baseline
     
-    def _fit_power_spec(self):
+    def _fit_power_spec(self, w=[]):
         """
         _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
         The residuals of the fit are calculated and saved to self.residuals
         """
         #run fit
         gmodel = self.Model(self._brownian)
-        y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
-        w = 1/y_err
+        if len(w)==0:
+            y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
+            w = 1/y_err
 
         #define inital guess of resnoance frequency and noise floor
         noise_floor = self._baseline_avg()
@@ -208,12 +209,27 @@ class brownian_fit():
         self.x_range = self.np.linspace(-10,10,10000)
         self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
+    def _two_pass_fit(self):
+        """
+        _two_pass_fit runs the fit to the power spectrum and uses the inital fit to get a better estimate of y_std.
+        The second fitting pass uses the updated standard deviation to fit the data.
+        """
+        #run initial fit
+        self._fit_power_spec()
+
+        #recalc weights - will override inital fit
+        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
+        w_second = 1/y_err
+        self._fit_power_spec(w=w_second)
+
+
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
         ax1.plot(self.x_range, self.norm_cdf, "-", color = self.colors["pink"])
         ax1.plot(self.r1,self.r2,'.', color = self.colors["magenta"])
         ax1.set_ylabel('CDF')
         ax1.set_xlabel('Normalized Residual [pm$^2$/Hz]')
+        ax1.set_xlim((self.r1[0], self.r1[-1]))
         self.plt.tight_layout()
         if figpath != None:
             self.plt.savefig(self.os.path.join(figpath,self.res_fig_file))
