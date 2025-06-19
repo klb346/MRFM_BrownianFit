@@ -80,7 +80,8 @@ class LVprocessing():
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        self.fit._fit_power_spec()
+        # self.fit._fit_power_spec()
+        self.fit._four_pass_fit()
         self.fit._find_params()
 
     def plot_report(self):
@@ -96,7 +97,8 @@ class LVprocessing():
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        self.fit._fit_power_spec()
+        # self.fit._fit_power_spec()
+        self.fit._four_pass_fit()
         self.fit._find_params()
 
         ##build the report using pylatex
