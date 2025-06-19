@@ -169,6 +169,27 @@ class brownian_fit():
 
         return P + baseline
     
+    def _fit_power_spec_constant_noise_floor(self, w=[]):
+        #run fit
+        gmodeli = self.Model(self._brownian)
+        if len(w)==0:
+            y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
+            w = 1/y_err
+
+        #define inital guess of resnoance frequency and noise floor
+        self.noise_floor_est = self._baseline_avg()
+    
+        f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
+        f0_init = self.x_trunc[f0_idx]
+
+        #initalize the parameters for lmfit
+        params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200)
+
+        #run the fit
+        self.result = {}
+        self.result['pass1'] = gmodeli.fit(self.y_trunc, params, f=self.x_trunc, weights=w, baseline=self.noise_floor_est)
+
+
     def _fit_power_spec(self, w=[]):
         """
         _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
@@ -209,6 +230,46 @@ class brownian_fit():
         self.x_range = self.np.linspace(-10,10,10000)
         self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
+    def _fit_power_spec_emcee(self, w=[], chain = 300):
+        """
+        _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
+        The residuals of the fit are calculated and saved to self.residuals
+        """
+        #run fit
+        gmodel = self.Model(self._brownian)
+        if len(w)==0:
+            y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
+            w = 1/y_err
+
+        #define inital guess of resnoance frequency and noise floor
+        noise_floor = self._baseline_avg()
+        # raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
+    
+        f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
+        # raise ValueError(self.np.shape(f0_idx))
+        f0_init = self.x_trunc[f0_idx]
+
+        #initalize the parameters for lmfit
+        params = gmodel.make_params(Gamma=1E-11, baseline=noise_floor, f0=f0_init, tau0=200)
+
+        #run the fit
+        self.result = {}
+        self.result['brownian'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w, method = 'emcee', fit_kws = dict(steps= chain))
+        self.fit_y = self.np.array(self.result['brownian'].best_fit)
+
+        #calculate residuals
+        self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
+        self.resid_mean = self.np.mean(self.residuals)
+
+
+        # calculate residual CDF
+        self.r1 = self.np.sort(self.residuals)
+        self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
+
+        # calculate normal CDF
+        self.x_range = self.np.linspace(-10,10,10000)
+        self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
+
     def _two_pass_fit(self):
         """
         _two_pass_fit runs the fit to the power spectrum and uses the inital fit to get a better estimate of y_std.
@@ -222,11 +283,54 @@ class brownian_fit():
         w_second = 1/y_err
         self._fit_power_spec(w=w_second)
 
+    def _three_pass_fit(self):
+
+        # run initial fit with fixed baseline
+        self._fit_power_spec_constant_noise_floor() 
+
+        # update weights
+        y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
+        w_second = 1/y_err
+        # run second fit with updated weights
+        self._fit_power_spec(w = w_second)
+
+        #update weights
+        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
+        w_third = 1/y_err
+
+        #run third fit
+        self._fit_power_spec(w = w_third)
+
+    def _four_pass_fit(self):
+
+       # run initial fit with fixed baseline
+        self._fit_power_spec_constant_noise_floor() 
+
+        # update weights
+        y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
+        w_second = 1/y_err
+        # run second fit with updated weights and fixed baseline
+        self._fit_power_spec_constant_noise_floor(w = w_second)
+
+        #update weights
+        y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
+        w_third = 1/y_err
+
+        #run third fit with floating baseline
+        self._fit_power_spec(w = w_third)
+
+        #last update of weights
+        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
+        w_fourth = 1/y_err
+
+        #final fit
+        self._fit_power_spec(w = w_fourth)
 
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
         ax1.plot(self.x_range, self.norm_cdf, "-", color = self.colors["pink"])
         ax1.plot(self.r1,self.r2,'.', color = self.colors["magenta"])
+        ax1.axes.text(0.8,0.8, "Normalized Residual Mean = "+str(round(self.resid_mean,4)))
         ax1.set_ylabel('CDF')
         ax1.set_xlabel('Normalized Residual [pm$^2$/Hz]')
         ax1.set_xlim((self.r1[0], self.r1[-1]))
