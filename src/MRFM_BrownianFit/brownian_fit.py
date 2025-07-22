@@ -3,6 +3,8 @@
 # Defines the data class brownian_fit
 # Author: Katrina L. Brown
 # 2025/05/20
+
+# Updated 2025/07/22
 ###################################################
 
 class brownian_fit():
@@ -16,20 +18,20 @@ class brownian_fit():
     The class defines functions to run the fit with all permutations of plot? and
     report? output.
 
-    There are two main functions to call that will call the necessary interal funtions.
+    There are two main functions to call that will call the necessary internal functions.
 
-    The plot_peak function will just plot the cantilever peak in a semilog plot. This is a
+    The plot_peak function will just plot the cantilever peak on a semilogy plot. This is a
     useful test that the code is extracting a good region of the power spectrum.
     
     The do_fit function will fit on the cantilever peak and store the resulting parameters of
     interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
     fit report can be found from self.result['brownian'].
 
-    The plot_fit function will gnereate a figure with the cantilever peak plotted with the fit 
-    function, and the resisuals plotted below.
+    The plot_fit function will generate a figure with the cantilever peak plotted with the fit 
+    function, and the residuals plotted below.
 
-    The residuals_CDF funciton will plot the cumulative distribution function of the normalized 4
-    residuals **on top of the expected CDF for a normal discibution
+    The residuals_CDF function will plot the cumulative distribution function of the normalized 4
+    residuals **on top of the expected CDF for a normal distribution
 
     """
     #import libraries
@@ -49,7 +51,7 @@ class brownian_fit():
         input parameter is not a 5-element tuple.
 
         If the input is accepted, the x, y, temp, and N_avgs are saved to the class.
-        The frequrency data is scaled by a factor of 10^-3 to convert from Hz to kHz.
+        The frequency data is scaled by a factor of 10^-3 to convert from Hz to kHz.
         The y-data is scaled by a factor of 10^6 to convert from nm^2/Hz to pm^2/Hz.
         These unit conversions will reduce numerical errors in the fitting.
 
@@ -60,7 +62,7 @@ class brownian_fit():
         # check input 
         if type(data) == tuple and len(data) == 5:
             tupletypes = list(map(type, data))
-            if tupletypes == [int, float, list, list, str]:
+            if tupletypes == [int, float, list, list , str]:
                 self.N_avgs, self.temp, x, y, self.file= data
 
                 # raise ValueError(len(x), len(y))
@@ -149,7 +151,7 @@ class brownian_fit():
 
         kT: 1.38*10^-23 *295 at room temperature [J = N m]
         tau0: Ringdown time [ms]
-        Gamma: Friction coefficent [N s/m]
+        Gamma: Friction coefficient [N s/m]
         f0: Resonance frequency [kHz]
 
         It is helpful to write in terms of unitless frequencies:
@@ -176,13 +178,13 @@ class brownian_fit():
             y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
             w = 1/y_err
 
-        #define inital guess of resnoance frequency and noise floor
+        #define initial guess of resonance frequency and noise floor
         self.noise_floor_est = self._baseline_avg()
     
         f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
         f0_init = self.x_trunc[f0_idx]
 
-        #initalize the parameters for lmfit
+        #initialize the parameters for lmfit
         params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200)
 
         #run the fit
@@ -232,7 +234,7 @@ class brownian_fit():
 
     def _fit_power_spec_emcee(self, w=[], chain = 300):
         """
-        _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
+        _fit_power_spec_emcee runs the fit to the power spectrum using the emcee method and saves the result to self.result['emcee'].
         The residuals of the fit are calculated and saved to self.residuals
         """
         #run fit
@@ -254,11 +256,11 @@ class brownian_fit():
 
         #run the fit
         self.result = {}
-        self.result['brownian'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w, method = 'emcee', fit_kws = dict(steps= chain))
-        self.fit_y = self.np.array(self.result['brownian'].best_fit)
+        self.result['emcee'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w, method = 'emcee', fit_kws = dict(steps= chain))
+        self.fit_y = self.np.array(self.result['emcee'].best_fit)
 
         #calculate residuals
-        self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
+        self.residuals = (self.y_trunc - self.result['emcee'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
 
@@ -272,7 +274,7 @@ class brownian_fit():
 
     def _two_pass_fit(self):
         """
-        _two_pass_fit runs the fit to the power spectrum and uses the inital fit to get a better estimate of y_std.
+        _two_pass_fit runs the fit to the power spectrum and uses the initial fit to get a better estimate of y_std.
         The second fitting pass uses the updated standard deviation to fit the data.
         """
         #run initial fit
@@ -320,8 +322,8 @@ class brownian_fit():
         self._fit_power_spec(w = w_third)
 
         #last update of weights
-        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
-        w_fourth = 1/y_err
+        self.y_err_f = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
+        w_fourth = 1/self.y_err_f
 
         #final fit
         self._fit_power_spec(w = w_fourth)
@@ -341,7 +343,7 @@ class brownian_fit():
 
     def plot_fit(self, figpath=None):
         """
-        The _plot_fit function will plot the cantilever peak with the fit function on a semilog plot,
+        The _plot_fit function will plot the cantilever peak with the fit function on a semilogy plot,
         and the normalized residuals underneath.
         """
         fig, (ax1, ax2) = self.plt.subplots(2, 1, figsize=(8, 6), sharex=True, height_ratios=(3, 1))
@@ -366,7 +368,7 @@ class brownian_fit():
     def _find_params(self):
         """
         **need to update!!!!
-        The _find_params function will calculate the cantilever spring conatant and quality factor and
+        The _find_params function will calculate the cantilever spring constant and quality factor and
         store them as self.k and self.Q respectively.
         The resonance frequency in stored in self.f0
         The force noise is found from :math: $frac{kT * \tau_0^2}{(\pi * \tau_0)^4 f_0 ^4}$ and stored
@@ -415,13 +417,13 @@ class brownian_fit():
 
     def do_fit(self):
         """
-        The do_fit function will fit on the cantilever peak and store the resulting parameters of
+        The do_fit function will perform a 4-pass fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
         fit report can be found from self.result['brownian'].
 
         """
         self._extract_peak()
-        self._fit_power_spec()
+        self._four_pass_fit()
         self._find_params()
     
     # define functions for bayesian fit - do NOT change previous functions

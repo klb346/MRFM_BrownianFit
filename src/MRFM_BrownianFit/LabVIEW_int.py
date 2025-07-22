@@ -4,6 +4,8 @@
 # Also generates a reoprt in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
 # Author: Katrina L. Brown
 # 2025/05/20
+
+# Updated 2025/07/22
 ###################################################
 
 class LVprocessing():
@@ -65,6 +67,17 @@ class LVprocessing():
         """
         Puts data in properly formatted tuple to pass to brownian_fit
         """
+
+        if isinstance(self.x, self.np.ndarray):
+            hold_x = list(self.x)
+            self.x = hold_x
+            del hold_x
+            
+        if isinstance(self.y, self.np.ndarray):
+            hold_y = list(self.y)
+            self.y = hold_y
+            del hold_y
+
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
