@@ -6,6 +6,9 @@ defined for fitting and plotting brownian motion data. The LabView_int module ha
 functions defined to convert input data into the format that the brownian_fit module
 expects.
 
+This package was built to run with python 3.9.12. The author recommends installing in a
+new virtual environment to protect any existing dependency installations.
+
 ## Installation
 To install the package, run the following code in the root directory of the package folder:
 
