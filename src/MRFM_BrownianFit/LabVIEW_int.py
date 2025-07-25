@@ -29,6 +29,7 @@ class LVprocessing():
     from datetime import datetime
     import os
     import warnings
+    import numpy as np
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
         
