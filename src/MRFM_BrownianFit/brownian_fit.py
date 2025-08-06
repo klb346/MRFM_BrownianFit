@@ -25,7 +25,7 @@ class brownian_fit():
     
     The do_fit function will fit on the cantilever peak and store the resulting parameters of
     interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-    fit report can be found from self.result['brownian'].
+    fit report can be found from self.result['leastsq'].
 
     The plot_fit function will generate a figure with the cantilever peak plotted with the fit 
     function, and the residuals plotted below.
@@ -42,7 +42,11 @@ class brownian_fit():
     import os
     import scipy.stats as ss
     import scipy.special as ssp
-    import warnings
+    import emcee
+    import tqdm
+    import os
+    import corner
+
 
 
     def __init__(self, data):
@@ -191,10 +195,9 @@ class brownian_fit():
         self.result = {}
         self.result['pass1'] = gmodeli.fit(self.y_trunc, params, f=self.x_trunc, weights=w, baseline=self.noise_floor_est)
 
-
     def _fit_power_spec(self, w=[]):
         """
-        _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['brownian'].
+        _fit_power_spec runs the fit to the power spectrum and saves the result to self.result['leastsq'].
         The residuals of the fit are calculated and saved to self.residuals
         """
         #run fit
@@ -203,7 +206,7 @@ class brownian_fit():
             y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
             w = 1/y_err
 
-        #define inital guess of resnoance frequency and noise floor
+        #define initial guess of resnoance frequency and noise floor
         noise_floor = self._baseline_avg()
         # raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
     
@@ -216,11 +219,11 @@ class brownian_fit():
 
         #run the fit
         self.result = {}
-        self.result['brownian'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
-        self.fit_y = self.np.array(self.result['brownian'].best_fit)
+        self.result['leastsq'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
+        self.fit_y = self.np.array(self.result['leastsq'].best_fit)
 
         #calculate residuals
-        self.residuals = (self.y_trunc - self.result['brownian'].best_fit)*w
+        self.residuals = (self.y_trunc - self.result['leastsq'].best_fit)*w
         self.resid_mean = self.np.mean(self.residuals)
 
 
@@ -232,76 +235,36 @@ class brownian_fit():
         self.x_range = self.np.linspace(-10,10,10000)
         self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
-    def _fit_power_spec_emcee(self, w=[], chain = 300):
-        """
-        _fit_power_spec_emcee runs the fit to the power spectrum using the emcee method and saves the result to self.result['emcee'].
-        The residuals of the fit are calculated and saved to self.residuals
-        """
-        #run fit
-        gmodel = self.Model(self._brownian)
-        if len(w)==0:
-            y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
-            w = 1/y_err
+    # def _two_pass_fit(self):
+    #     """
+    #     _two_pass_fit runs the fit to the power spectrum and uses the initial fit to get a better estimate of y_std.
+    #     The second fitting pass uses the updated standard deviation to fit the data.
+    #     """
+    #     #run initial fit
+    #     self._fit_power_spec()
 
-        #define inital guess of resnoance frequency and noise floor
-        noise_floor = self._baseline_avg()
-        # raise ValueError(self.np.shape(self.y_trunc), len(self.y_trunc))
-    
-        f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
-        # raise ValueError(self.np.shape(f0_idx))
-        f0_init = self.x_trunc[f0_idx]
+    #     #recalc weights - will override initial fit
+    #     y_err = self.result['leastsq'].best_fit/self.np.sqrt(self.N_avgs)
+    #     w_second = 1/y_err
+    #     self._fit_power_spec(w=w_second)
 
-        #initalize the parameters for lmfit
-        params = gmodel.make_params(Gamma=1E-11, baseline=noise_floor, f0=f0_init, tau0=200)
+    # def _three_pass_fit(self):
 
-        #run the fit
-        self.result = {}
-        self.result['emcee'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w, method = 'emcee', fit_kws = dict(steps= chain))
-        self.fit_y = self.np.array(self.result['emcee'].best_fit)
+    #     # run initial fit with fixed baseline
+    #     self._fit_power_spec_constant_noise_floor() 
 
-        #calculate residuals
-        self.residuals = (self.y_trunc - self.result['emcee'].best_fit)*w
-        self.resid_mean = self.np.mean(self.residuals)
+    #     # update weights
+    #     y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
+    #     w_second = 1/y_err
+    #     # run second fit with updated weights
+    #     self._fit_power_spec(w = w_second)
 
+    #     #update weights
+    #     y_err = self.result['leastsq'].best_fit/self.np.sqrt(self.N_avgs)
+    #     w_third = 1/y_err
 
-        # calculate residual CDF
-        self.r1 = self.np.sort(self.residuals)
-        self.r2 = self.np.arange(1, len(self.r1)+1)/len(self.r1)
-
-        # calculate normal CDF
-        self.x_range = self.np.linspace(-10,10,10000)
-        self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
-
-    def _two_pass_fit(self):
-        """
-        _two_pass_fit runs the fit to the power spectrum and uses the initial fit to get a better estimate of y_std.
-        The second fitting pass uses the updated standard deviation to fit the data.
-        """
-        #run initial fit
-        self._fit_power_spec()
-
-        #recalc weights - will override inital fit
-        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
-        w_second = 1/y_err
-        self._fit_power_spec(w=w_second)
-
-    def _three_pass_fit(self):
-
-        # run initial fit with fixed baseline
-        self._fit_power_spec_constant_noise_floor() 
-
-        # update weights
-        y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
-        w_second = 1/y_err
-        # run second fit with updated weights
-        self._fit_power_spec(w = w_second)
-
-        #update weights
-        y_err = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
-        w_third = 1/y_err
-
-        #run third fit
-        self._fit_power_spec(w = w_third)
+    #     #run third fit
+    #     self._fit_power_spec(w = w_third)
 
     def _four_pass_fit(self):
 
@@ -322,7 +285,7 @@ class brownian_fit():
         self._fit_power_spec(w = w_third)
 
         #last update of weights
-        self.y_err_f = self.result['brownian'].best_fit/self.np.sqrt(self.N_avgs)
+        self.y_err_f = self.result['leastsq'].best_fit/self.np.sqrt(self.N_avgs)
         w_fourth = 1/self.y_err_f
 
         #final fit
@@ -349,7 +312,7 @@ class brownian_fit():
         fig, (ax1, ax2) = self.plt.subplots(2, 1, figsize=(8, 6), sharex=True, height_ratios=(3, 1))
 
         ax1.semilogy(self.x_trunc, self.y_trunc, color =self.colors["pink"], label='data')
-        ax1.plot(self.x_trunc, self.result['brownian'].best_fit, color = self.colors["darkmagenta"], label='fit')
+        ax1.plot(self.x_trunc, self.result['leastsq'].best_fit, color = self.colors["darkmagenta"], label='fit')
 
         ax1.set_ylabel('PSD [pm$^2$/Hz]')
 
@@ -376,23 +339,23 @@ class brownian_fit():
         The detector noise is the baseline and is stored as self.Sx
         """
         #calculate canilever spring constant in mN/m
-        self.f0 = float(1.0E3*self.result['brownian'].best_values['f0'])      # Hz
-        self.f0_stderr = float(1.0E3*self.result['brownian'].params['f0'].stderr) # Hz
+        self.f0 = float(1.0E3*self.result['leastsq'].best_values['f0'])      # Hz
+        self.f0_stderr = float(1.0E3*self.result['leastsq'].params['f0'].stderr) # Hz
 
-        self.tau0 = float(1.0E-3*self.result['brownian'].best_values['tau0']) # s
-        self.tau0_stderr = float(1.0E-3*self.result['brownian'].params['tau0'].stderr) # s
+        self.tau0 = float(1.0E-3*self.result['leastsq'].best_values['tau0']) # s
+        self.tau0_stderr = float(1.0E-3*self.result['leastsq'].params['tau0'].stderr) # s
 
-        self.k = float(2 * self.np.pi**2 * self.f0**2 * self.tau0 * self.result['brownian'].best_values['Gamma'] * 1e3) # mN/m
-        self.k_stderr = self.k * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + (self.f0_stderr/self.f0)**2 + (self.result['brownian'].params['Gamma'].stderr / self.result['brownian'].best_values['Gamma'])**2)
+        self.k = float(2 * self.np.pi**2 * self.f0**2 * self.tau0 * self.result['leastsq'].best_values['Gamma'] * 1e3) # mN/m
+        self.k_stderr = self.k * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + (self.f0_stderr/self.f0)**2 + (self.result['leastsq'].params['Gamma'].stderr / self.result['leastsq'].best_values['Gamma'])**2)
 
         #calculate cantilever quality factor and propagate error
-        self.Q = float(self.np.pi*self.result['brownian'].best_values['tau0']*self.result['brownian'].best_values['f0'])
+        self.Q = float(self.np.pi*self.result['leastsq'].best_values['tau0']*self.result['leastsq'].best_values['f0'])
         self.Q_stderr = self.Q * self.m.sqrt((self.tau0_stderr/self.tau0)**2 +(self.f0_stderr/self.f0)**2)
 
         #calc force noise
         kT = 1.38*10**(-23) * self.temp    # N m
-        self.Sx = float(1E-6 *self.result['brownian'].best_values['baseline'])   #nm^2/Hz
-        self.Sx_stderr = float(1E-6 * self.result['brownian'].params['baseline'].stderr)  #nm^2/Hz
+        self.Sx = float(1E-6 *self.result['leastsq'].best_values['baseline'])   #nm^2/Hz
+        self.Sx_stderr = float(1E-6 * self.result['leastsq'].params['baseline'].stderr)  #nm^2/Hz
         
         self.Sth = float((kT*self.f0)/((0.05E-12)**2 * self.k * 1E03 *self.Q))   #Hz^2/Hz  
         self.Sth_stderr = self.Sth * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2) #Hz^2/Hz  
@@ -403,8 +366,8 @@ class brownian_fit():
         # print("Cantilever spring constant = ", self.k, " [mN/m]")
 
         #calc P(0)
-        self.P0 = float(1E18 * kT /(self.result['brownian'].best_values['Gamma'] * self.np.pi**4 *self.tau0**2 *self.f0**4)) #nm^2/Hz
-        self.P0_stderr = self.P0 * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2 + (self.result['brownian'].params['Gamma'].stderr / self.result['brownian'].best_values['Gamma'])**2) #nm^2/Hz
+        self.P0 = float(1E18 * kT /(self.result['leastsq'].best_values['Gamma'] * self.np.pi**4 *self.tau0**2 *self.f0**4)) #nm^2/Hz
+        self.P0_stderr = self.P0 * self.m.sqrt(2*(self.tau0_stderr/self.tau0)**2 + 4*(self.f0_stderr/self.f0)**2 + (self.result['leastsq'].params['Gamma'].stderr / self.result['leastsq'].best_values['Gamma'])**2) #nm^2/Hz
     
         #calc intrinsic dissipation
         self.intrinsic_diss = 1E9 * self.k/(self.Q*2*self.np.pi*self.f0) #pN s/m
@@ -419,17 +382,143 @@ class brownian_fit():
         """
         The do_fit function will perform a 4-pass fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-        fit report can be found from self.result['brownian'].
+        fit report can be found from self.result['leastsq'].
 
         """
-        self._extract_peak()
+        self._extract_peak() 
         self._four_pass_fit()
         self._find_params()
     
     # define functions for bayesian fit - do NOT change previous functions
 
-    # def bayesian_fit(self):
-    #     self.do_fit()
+    def _log_likelihood(self, theta, x, y):
+        #unpack theta
+        Gamma, tau0, f0, baseline = theta
 
-    #     sigma = self.np.sqrt(1/self.N_avgs)*self.result['brownian'].best_fit
-    #     log_L = self.np.sum(self.np.log(1/self.np.sqrt(2*self.np.pi*sigma**2))*np.ones_like(x))+np.sum(-((_particle_model(x,w)-s)**2/(2*sigma**2)), 1)
+        model = self._brownian(x, Gamma, tau0, f0, baseline)
+        
+        return self.np.sum(
+        -((self.N_avgs-1)*self.np.log((self.N_avgs-1))-(self.N_avgs-1))
+        +self.N_avgs*self.np.log(self.N_avgs)
+        -self.N_avgs*self.np.log(model)
+        +(self.N_avgs-1)*self.np.log(y)
+        -(self.N_avgs*y/(model)))
+    
+    def _log_prior(self, theta, param_bounds):
+        Gamma, tau0, f0, baseline = theta
+
+        Gamma_min, Gamma_max = param_bounds[0]
+        tau0_min, tau0_max = param_bounds[1]
+        f0_min, f0_max = param_bounds[2]
+        baseline_min, baseline_max = param_bounds[3]
+
+        if (Gamma_min < Gamma < Gamma_max and 
+            tau0_min < tau0 < tau0_max and 
+            f0_min < f0 < f0_max and 
+            baseline_min < baseline < baseline_max):
+            return 0.0
+        
+        return -self.np.inf
+    
+    def _log_probability(self, theta, param_bounds, x, y):
+        lp = self._log_prior(theta, param_bounds)
+        
+        if not self.np.isfinite(lp):
+            return -self.np.inf
+        return lp + self._log_likelihood(theta, x, y)
+    
+    def max_likelihood(self, param_bounds):
+        """
+        The max_likelihood function will find the parameter values for Gamma tau0, f0, and the baseline that
+        corrpond to the maximum of the likelihood by solving for the minimum of -log(likelihood) using the
+        scipy minimize function. The minimizer starts at the best fit values from lmfit and therefore one of
+        the fitting functions within brownian_fit must be run before calling this function. The results are
+        stored in a dictionary self.bayesian_result.
+        """
+        from scipy.optimize import minimize
+        soln = minimize(
+            lambda *args: -self._log_likelihood(*args),
+            self.np.array(
+                [
+                    self.result['leastsq'].best_values['Gamma'], 
+                    self.result['leastsq'].best_values['tau0'], 
+                    self.result['leastsq'].best_values['f0'], 
+                    self.result['leastsq'].best_values['baseline']
+                    ]),
+            args=(self.x_trunc, self.y_trunc),
+            bounds = param_bounds)
+        
+        self.bayesian_result = {'Gamma': soln.x[0],
+                                'tau0': soln.x[1],
+                                'f0': soln.x[2],
+                                'baseline': soln.x[3]}
+                        
+
+    def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(), figpath = None):
+        """
+        The MCMC function will run a Markhov Chain Monte Carlo simulation
+        
+        """
+        
+        # define inital state within 5% of leastsq fit best values
+        pos = self.np.array([
+            self.result['leastsq'].best_values['Gamma'], 
+            self.result['leastsq'].best_values['tau0'], 
+            self.result['leastsq'].best_values['f0'], 
+            self.result['leastsq'].best_values['baseline']
+             ])*(1+0.05*self.np.random.randn(walkers,4))
+
+        # store ndim
+        nwalkers, ndim = pos.shape
+
+        #initalize and run sampler
+        print("Running emcee sampler...")
+        sampler = self.emcee.EnsembleSampler(walkers, ndim, self._log_probability, moves = moves, args=(param_bounds, self.x_trunc, self.y_trunc))
+        sampler.run_mcmc(initial_state=pos, nsteps=nsteps, progress=progress)
+        
+        print("Plotting walkers...")
+
+        # plot walker path
+        fig1, axes = self.plt.subplots(4, figsize=(6.50, 8.0), sharex=True)
+        samples = sampler.get_chain()
+        labels = ["Gamma", "tau0", "f0", "baseline"]
+        for i in range(ndim):
+            ax = axes[i]
+            ax.plot(samples[:, :, i], "k", alpha=0.3)
+            ax.set_xlim(0, len(samples))
+            ax.set_ylabel(labels[i])
+            ax.yaxis.set_label_coords(-0.1, 0.5)
+
+        axes[-1].set_xlabel("step number");
+
+        fig1.align_ylabels(axes)
+        fig1.subplots_adjust(hspace=0.1)
+        self.plt.tight_layout()
+
+        if figpath != None:
+            self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.png')), dpi=300)
+            self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.pdf')))
+
+        self.plt.show()
+
+        print("Calculating autocorrelation times...")
+        # get autocorrelation time
+        self.bayesian_result["tau"]= sampler.get_autocorr_time()
+        print(self.bayesian_result["tau"])
+
+        flat_samples = sampler.get_chain(discard=2* int(self.np.max(self.bayesian_result["tau"])), thin=15, flat=True)
+
+        print("Generating corner plots...")
+        # plot parameter distributions
+        fig2 = self.corner.corner(
+            flat_samples, labels=labels, truths=[
+                    self.result['leastsq'].best_values['Gamma'], 
+                    self.result['leastsq'].best_values['tau0'], 
+                    self.result['leastsq'].best_values['f0'], 
+                    self.result['leastsq'].best_values['baseline']
+                    ])
+        if figpath != None:
+            fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.png')), dpi=300)
+            fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.pdf')))
+        
+        print("Done.")

@@ -89,7 +89,7 @@ class LVprocessing():
         """
         The do_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-        fit report can be found from self.result['brownian'].
+        fit report can be found from self.result['leastsq'].
         """
         self._call_fitting_class()
 
@@ -102,7 +102,7 @@ class LVprocessing():
         """
         The plot_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-        fit report can be found from self.result['brownian'].
+        fit report can be found from self.result['leastsq'].
         A .tex file is generated summarizing the result of the fit. Two figures are included: the 
         cantilever peak data and fit with normalized residuals below, and the cumulative distribution 
         function of the normalized residuals.
@@ -111,7 +111,6 @@ class LVprocessing():
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        # self.fit._fit_power_spec()
         self.fit._four_pass_fit()
         self.fit._find_params()
 
@@ -164,7 +163,7 @@ class LVprocessing():
                 doc.append(self.NoEscape("$f_0 =$ " + str(round(self.fit.f0,2)) + "$\pm$" + str(round(self.fit.f0_stderr, 2)) + " Hz"))
                 doc.append("\n")
                 #gamma with error - friction coefficent
-                doc.append(self.NoEscape("$\Gamma =$ " + str(round(self.fit.result['brownian'].best_values['Gamma'] * 1E12,5)) + "$\pm$" + str(round(self.fit.result['brownian'].params['Gamma'].stderr * 1E12,5)) + " pN s/m"))
+                doc.append(self.NoEscape("$\Gamma =$ " + str(round(self.fit.result['leastsq'].best_values['Gamma'] * 1E12,5)) + "$\pm$" + str(round(self.fit.result['leastsq'].params['Gamma'].stderr * 1E12,5)) + " pN s/m"))
                 doc.append("\n")
                 #Sx with error -(detector noise floor)
                 doc.append(self.NoEscape("$S_x =$ " + str(round(self.fit.Sx * 1E6,5)) + "$\pm$" + str(round(self.fit.Sx_stderr * 1E6, 5)) + " ${\mu m}^2$/Hz"))
@@ -203,7 +202,7 @@ class LVprocessing():
 
             #the fit report
             with doc.create(self.Subsection("LMFit Full Report")):
-                doc.append(self.NoEscape(self.fit.result['brownian'].fit_report()))
+                doc.append(self.NoEscape(self.fit.result['leastsq'].fit_report()))
 
         #section header - Plot fit w/residuals
         with doc.create(self.Section("Brownian Motion Fit Plot")):

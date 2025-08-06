@@ -1,4 +1,8 @@
-# MRFM_BrownianFit
+---
+title: MRFM_BrownianFit 1.1.0
+date: 08/5/2025
+---
+
 The brownian fit package has been built to enable the extraction of cantilever parameters
 from the position fluctuation power spectrum for MRFM cantilevers. The current version
 houses two modules: brownian_fit and LabView_int. The brownian_fit module has functions
@@ -16,6 +20,7 @@ To install the package, run the following code in the root directory of the pack
 pip install .
 '''
 
+TESTS ARE CURRENTLY NOT WORKING PLS SKIP
 Tests can be run by running pytest in the root directory of the package
 The tests simply verify that the code is running as expected by comparing the output of the
 example data to previously performed fits.
@@ -46,9 +51,13 @@ The cantilever peak is plotted with the fit function, and the residuals are plot
 The residuals_cdf function will plot the CDF of the fit residuals along with the cdf for
 a normal distribution with unit width.
 
+The max_logL function will...
+
+The MCMC will...
+
 ### Example plots:
-![An example plot from the fitting of the data in examples](examples\fit_spec_ex.png)
-![An example residual CDF plot from the fitting of the data in examples](examples\example_20250314_residual_cdf.png)
+![An example plot from the fitting of the data in examples](examples\example_outputs\20250701_baysian_8avgs.png)
+![An example residual CDF plot from the fitting of the data in examples](examples\example_outputs\20250701_baysian_8avgs_residual_cdf.png)
 
 
 ## LabView_int

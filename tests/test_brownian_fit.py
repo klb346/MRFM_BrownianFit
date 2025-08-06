@@ -1,14 +1,26 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from lmfit import Model
-from MRFM_BrownianFit import brownian_fit
+from MRFM_BrownianFit.LabVIEW_int import LVprocessing
+import pandas as pd
+import numpy as np
 
-data = brownian_fit("example_brownian_031425.csv")
+#read in test data
+df=pd.read_csv("tests/example_brownian_031425.csv")
 
-data._extract_peak()
-data._fit_power_spec()
-data._find_params()
+x = list(df['Frequency [Hz] - Plot 0']*1E-3)
+y = list(df['nm^2/Hz - Plot 0']*1e6)
+
+temp = float(df['temp [K]'][0])
+N_avgs = int(df['averages'][0])
+
+
+#test LVprocessing
+data = LVprocessing(N_avgs, temp, x, y, name="test", path = "tests")
+data.do_fit()
+data.fit._extract_peak()
+data.fit._fit_power_spec()
+data.fit._find_params()
 
 def test_Q_example(data):
     """
