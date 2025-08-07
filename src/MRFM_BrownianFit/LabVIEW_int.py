@@ -30,6 +30,7 @@ class LVprocessing():
     import os
     import warnings
     import numpy as np
+    import re
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
         
@@ -40,8 +41,12 @@ class LVprocessing():
         self.name = name
         self.x = x
         self.y = y
-        self.path = path
-        self.save = str(self.os.path.join(path, name))
+
+        path_hold = self.re.split(r'[/,\\]', path)
+        self.path = str(self.os.path.join(*path_hold))
+        del path_hold
+
+        self.save = str(self.os.path.join(self.path, name))
 
         # print(fit_range_L, fit_range_U)
         
