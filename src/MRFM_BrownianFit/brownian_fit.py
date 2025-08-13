@@ -49,7 +49,7 @@ class brownian_fit():
 
 
 
-    def __init__(self, data):
+    def __init__(self, data, scale = False):
         """
         The __init__ function handles data input and will raise a TypeError if the
         input parameter is not a 5-element tuple.
@@ -86,10 +86,13 @@ class brownian_fit():
             "darkmagenta" : "#7D0064"
         }
 
+        self.scale = scale
+        
+
     def _extract_peak(self, rangeL = None, rangeU = None):
         """
-        The _extract_peak function extracts a 100 Hz wide section of the input data
-        centered at the cantiliever peak which is found by finding the second maxium in
+        The _extract_peak function extracts a 1000 Hz wide section of the input data
+        centered at the cantilever peak which is found by finding the maximum in
         the y-data (the first maximum is at zero).
         """
 
@@ -97,6 +100,14 @@ class brownian_fit():
             # manual-fit fit whole data range
             idx_u=-1
             idx_l=0
+
+            #find indices of fit range
+            indices_above, = self.np.where(self.x >= rangeL)
+            indices_below, = self.np.where(self.x <= rangeU)
+            # raise ValueError(indices_above.shape, indices.shape)
+            idx_u = indices_below[-1]
+            idx_l = indices_above[0]
+        
         else:
             #auto-fit
             #find estimate of canitlever peak (highest non-zero peak)
@@ -123,11 +134,12 @@ class brownian_fit():
         self.y_trunc = self.y[idx_l:idx_u]
         # raise ValueError(len(self.y_trunc), f0_estimate_idx, idx_l, idx_u)
 
-    def plot_peak(self):
+    def plot_peak(self, rangeL = None, rangeU = None):
         """
         The plot_peak function will just plot the cantilever peak in a semilog plot. 
         """
-        self._extract_peak()
+        self._extract_peak(rangeL = rangeL, rangeU = rangeU)
+
         
         self.plt.semilogy(self.x_trunc,self.y_trunc,color=self.colors["pink"], label = "data")
         #plt.title("Brownian Motion Power Spectrum")
@@ -138,7 +150,7 @@ class brownian_fit():
     def _baseline_avg(self):
         """
         The _baseline_avg function will estimate the baseline from the mean of region of
-        the spectum at well away from cantilever peak (the last 100 data points of the data).
+        the spectrum at well away from cantilever peak (the last 100 data points of the data).
         """
         return self.np.mean(self.y[-100:-1])
 
@@ -267,6 +279,9 @@ class brownian_fit():
     #     self._fit_power_spec(w = w_third)
 
     def _four_pass_fit(self):
+        if self.scale == True:
+            self.scale_factor = 10**(round(self.np.log(1/self._baseline_avg())))
+            self.y_trunc = self.y_trunc * self.scale_factor
 
        # run initial fit with fixed baseline
         self._fit_power_spec_constant_noise_floor() 
@@ -290,6 +305,21 @@ class brownian_fit():
 
         #final fit
         self._fit_power_spec(w = w_fourth)
+
+        if self.scale == True:
+            self.y_trunc = self.y_trunc / self.scale_factor
+            self.result['leastsq'].best_fit = self.result['leastsq'].best_fit / self.scale_factor
+
+            self.result['leastsq'].best_values['baseline'] = self.result['leastsq'].best_values['baseline'] / self.scale_factor
+            self.result['leastsq'].params['baseline'].value = self.result['leastsq'].params['baseline'].value / self.scale_factor
+            self.result['leastsq'].params['baseline'].stderr = self.result['leastsq'].params['baseline'].stderr / self.scale_factor
+            self.result['leastsq'].best_values['Gamma'] = self.result['leastsq'].best_values['Gamma'] * self.scale_factor
+            self.result['leastsq'].params['Gamma'].stderr = self.result['leastsq'].params['Gamma'].stderr * self.scale_factor
+
+            self.residuals = self.residuals/self.scale_factor
+            self.resid_mean = self.resid_mean/self.scale_factor
+
+
 
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
@@ -338,6 +368,7 @@ class brownian_fit():
         as self.force_noise.
         The detector noise is the baseline and is stored as self.Sx
         """
+
         #calculate canilever spring constant in mN/m
         self.f0 = float(1.0E3*self.result['leastsq'].best_values['f0'])      # Hz
         self.f0_stderr = float(1.0E3*self.result['leastsq'].params['f0'].stderr) # Hz
@@ -385,8 +416,10 @@ class brownian_fit():
         fit report can be found from self.result['leastsq'].
 
         """
-        self._extract_peak() 
+        self._extract_peak()
+
         self._four_pass_fit()
+
         self._find_params()
     
     # define functions for bayesian fit - do NOT change previous functions
@@ -397,6 +430,11 @@ class brownian_fit():
 
         model = self._brownian(x, Gamma, tau0, f0, baseline)
         
+        if self.N_avgs == 1:
+            return self.np.sum(
+            -self.N_avgs*self.np.log(model)
+            -(self.N_avgs*y/(model)))
+
         return self.np.sum(
         -((self.N_avgs-1)*self.np.log((self.N_avgs-1))-(self.N_avgs-1))
         +self.N_avgs*self.np.log(self.N_avgs)
@@ -444,17 +482,18 @@ class brownian_fit():
                     self.result['leastsq'].best_values['tau0'], 
                     self.result['leastsq'].best_values['f0'], 
                     self.result['leastsq'].best_values['baseline']
-                    ]),
+                    ])*(1+0.02*self.np.random.randn(1,4)),
             args=(self.x_trunc, self.y_trunc),
-            bounds = param_bounds)
+            method = 'Nelder-Mead')
         
         self.bayesian_result = {'Gamma': soln.x[0],
                                 'tau0': soln.x[1],
                                 'f0': soln.x[2],
-                                'baseline': soln.x[3]}
+                                'baseline': soln.x[3],
+                                'message': soln.message}
                         
 
-    def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(), figpath = None):
+    def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None):
         """
         The MCMC function will run a Markhov Chain Monte Carlo simulation
         

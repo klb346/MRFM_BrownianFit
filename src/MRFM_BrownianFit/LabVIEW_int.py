@@ -32,7 +32,7 @@ class LVprocessing():
     import numpy as np
     import re
 
-    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
+    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None, scale = False):
         
         # raise ValueError(len(y), len(x))
 
@@ -66,8 +66,10 @@ class LVprocessing():
             if (((fit_range_U == None) and (fit_range_L != None)) or ((fit_range_U != None) and (fit_range_L == None))):
                 self.warnings.warn("Both ends of the fit range must be specified, performing auto-fit")
             
-            self.fit_range_L = fit_range_L
-            self.fit_range_U = fit_range_U
+            self.fit_range_L = None
+            self.fit_range_U = None
+
+        self.scale = scale
 
     def _compile_for_fitting(self):
         """
@@ -84,11 +86,16 @@ class LVprocessing():
             self.y = hold_y
             del hold_y
 
+        
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
         self._compile_for_fitting()
-        self.fit = self.brownian_fit(self.datatuple)
+
+        if self.scale == True:
+            self.fit = self.brownian_fit(self.datatuple, scale=self.scale)
+        else:
+            self.fit = self.brownian_fit(self.datatuple)
 
     def do_fit(self):
         """
