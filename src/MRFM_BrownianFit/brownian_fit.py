@@ -5,6 +5,7 @@
 # 2025/05/20
 
 # Updated 2025/07/22
+# Updated 2026/01/15 by KLB - extracted MCMC method into new module MCMC.py which will have separate dependencies and is optional to install
 ###################################################
 
 class brownian_fit():
@@ -40,14 +41,8 @@ class brownian_fit():
     from lmfit import Model
     import math as m
     import os
-    import scipy.stats as ss
+    # import scipy.stats as ss
     import scipy.special as ssp
-    import emcee
-    import tqdm
-    import os
-    import corner
-
-
 
     def __init__(self, data, scale = False):
         """
@@ -198,7 +193,10 @@ class brownian_fit():
         self.noise_floor_est = self._baseline_avg()
     
         f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
-        f0_init = self.x_trunc[f0_idx]
+        if isinstance(f0_idx, self.np.ndarray):
+            f0_init = self.x_trunc[f0_idx[0]]
+        else:
+            f0_init = self.x_trunc[f0_idx]
 
         #initialize the parameters for lmfit
         params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200)
@@ -224,14 +222,29 @@ class brownian_fit():
     
         f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
         # raise ValueError(self.np.shape(f0_idx))
-        f0_init = self.x_trunc[f0_idx]
+        if isinstance(f0_idx, self.np.ndarray):
+            f0_init = self.x_trunc[f0_idx[0]]
+        else:
+            f0_init = self.x_trunc[f0_idx]
 
         #initalize the parameters for lmfit
         params = gmodel.make_params(Gamma=1E-11, baseline=noise_floor, f0=f0_init, tau0=200)
 
+        # for EFM
+        # params = gmodel.make_params(
+        #     Gamma = 1E-11,
+        #     baseline = noise_floor,
+        #     f0 = f0_init,
+        #     tau0 = 200)
+        
+        # params['Gamma'].min = 0.0
+        # params['baseline'].min = 0.0
+        # params['f0'].min = 0.0
+        # params['tau0'].min = 0.0
+
         #run the fit
         self.result = {}
-        self.result['leastsq'] = gmodel.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
+        self.result['leastsq'] = gmodel.fit(self.y_trunc, params = params, f=self.x_trunc, weights=w)
         self.fit_y = self.np.array(self.result['leastsq'].best_fit)
 
         #calculate residuals
@@ -247,36 +260,6 @@ class brownian_fit():
         self.x_range = self.np.linspace(-10,10,10000)
         self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
-    # def _two_pass_fit(self):
-    #     """
-    #     _two_pass_fit runs the fit to the power spectrum and uses the initial fit to get a better estimate of y_std.
-    #     The second fitting pass uses the updated standard deviation to fit the data.
-    #     """
-    #     #run initial fit
-    #     self._fit_power_spec()
-
-    #     #recalc weights - will override initial fit
-    #     y_err = self.result['leastsq'].best_fit/self.np.sqrt(self.N_avgs)
-    #     w_second = 1/y_err
-    #     self._fit_power_spec(w=w_second)
-
-    # def _three_pass_fit(self):
-
-    #     # run initial fit with fixed baseline
-    #     self._fit_power_spec_constant_noise_floor() 
-
-    #     # update weights
-    #     y_err = self.result['pass1'].best_fit/self.np.sqrt(self.N_avgs)
-    #     w_second = 1/y_err
-    #     # run second fit with updated weights
-    #     self._fit_power_spec(w = w_second)
-
-    #     #update weights
-    #     y_err = self.result['leastsq'].best_fit/self.np.sqrt(self.N_avgs)
-    #     w_third = 1/y_err
-
-    #     #run third fit
-    #     self._fit_power_spec(w = w_third)
 
     def _four_pass_fit(self):
         if self.scale == True:
@@ -318,8 +301,6 @@ class brownian_fit():
 
             self.residuals = self.residuals/self.scale_factor
             self.resid_mean = self.resid_mean/self.scale_factor
-
-
 
     def residuals_CDF(self, figpath=None):
         fig, ax1 = self.plt.subplots(1,1,figsize=(8, 6))
@@ -408,7 +389,6 @@ class brownian_fit():
         self.intrinsic_force_noise = float(1E28 *4 * kT *self.intrinsic_diss) #aN^2/Hz
         self.intrinsic_force_noise_stderr = float(1E28 *4 * kT *self.intrinsic_diss_stderr)  #aN^2/Hz
 
-
     def do_fit(self):
         """
         The do_fit function will perform a 4-pass fit on the cantilever peak and store the resulting parameters of
@@ -422,7 +402,7 @@ class brownian_fit():
 
         self._find_params()
     
-    # define functions for bayesian fit - do NOT change previous functions
+    # define functions for bayesian max log liklihood calculations
 
     def _log_likelihood(self, theta, x, y):
         #unpack theta
@@ -465,7 +445,7 @@ class brownian_fit():
             return -self.np.inf
         return lp + self._log_likelihood(theta, x, y)
     
-    def max_likelihood(self, param_bounds):
+    def max_likelihood(self, method = 'Nelder-Mead'):
         """
         The max_likelihood function will find the parameter values for Gamma tau0, f0, and the baseline that
         corrpond to the maximum of the likelihood by solving for the minimum of -log(likelihood) using the
@@ -482,82 +462,110 @@ class brownian_fit():
                     self.result['leastsq'].best_values['tau0'], 
                     self.result['leastsq'].best_values['f0'], 
                     self.result['leastsq'].best_values['baseline']
-                    ])*(1+0.02*self.np.random.randn(1,4)),
+                    ]),
+                    # *(1+0.01*self.np.random.randn(1,4)),
             args=(self.x_trunc, self.y_trunc),
-            method = 'Nelder-Mead')
+            method = method)
         
         self.bayesian_result = {'Gamma': soln.x[0],
                                 'tau0': soln.x[1],
                                 'f0': soln.x[2],
                                 'baseline': soln.x[3],
-                                'message': soln.message}
-                        
+                                'message': soln.message}                       
 
-    def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None):
-        """
-        The MCMC function will run a Markhov Chain Monte Carlo simulation
+    # def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None):
+    #     """
+    #     The MCMC function will run a Markhov Chain Monte Carlo simulation
         
-        """
+    #     """
         
-        # define inital state within 5% of leastsq fit best values
-        pos = self.np.array([
-            self.result['leastsq'].best_values['Gamma'], 
-            self.result['leastsq'].best_values['tau0'], 
-            self.result['leastsq'].best_values['f0'], 
-            self.result['leastsq'].best_values['baseline']
-             ])*(1+0.05*self.np.random.randn(walkers,4))
+    #     # define inital state within 5% of leastsq fit best values
+    #     pos = self.np.array([
+    #         self.result['leastsq'].best_values['Gamma'], 
+    #         self.result['leastsq'].best_values['tau0'], 
+    #         self.result['leastsq'].best_values['f0'], 
+    #         self.result['leastsq'].best_values['baseline']
+    #          ])*(1+0.05*self.np.random.randn(walkers,4))
 
-        # store ndim
-        nwalkers, ndim = pos.shape
+    #     # store ndim
+    #     nwalkers, ndim = pos.shape
 
-        #initalize and run sampler
-        print("Running emcee sampler...")
-        sampler = self.emcee.EnsembleSampler(walkers, ndim, self._log_probability, moves = moves, args=(param_bounds, self.x_trunc, self.y_trunc))
-        sampler.run_mcmc(initial_state=pos, nsteps=nsteps, progress=progress)
+    #     #initalize and run sampler
+    #     print("Running emcee sampler...")
+    #     sampler = self.emcee.EnsembleSampler(walkers, ndim, self._log_probability, moves = moves, args=(param_bounds, self.x_trunc, self.y_trunc))
+    #     sampler.run_mcmc(initial_state=pos, nsteps=nsteps, progress=progress)
         
-        print("Plotting walkers...")
+    #     print("Plotting walkers...")
 
-        # plot walker path
-        fig1, axes = self.plt.subplots(4, figsize=(6.50, 8.0), sharex=True)
-        samples = sampler.get_chain()
-        labels = ["Gamma", "tau0", "f0", "baseline"]
-        for i in range(ndim):
-            ax = axes[i]
-            ax.plot(samples[:, :, i], "k", alpha=0.3)
-            ax.set_xlim(0, len(samples))
-            ax.set_ylabel(labels[i])
-            ax.yaxis.set_label_coords(-0.1, 0.5)
+    #     # plot walker path
+    #     fig1, axes = self.plt.subplots(4, figsize=(6.50, 8.0), sharex=True)
+    #     samples = sampler.get_chain()
+    #     labels = ["Gamma", "tau0", "f0", "baseline"]
+    #     for i in range(ndim):
+    #         ax = axes[i]
+    #         ax.plot(samples[:, :, i], "k", alpha=0.3)
+    #         ax.set_xlim(0, len(samples))
+    #         ax.set_ylabel(labels[i])
+    #         ax.yaxis.set_label_coords(-0.1, 0.5)
 
-        axes[-1].set_xlabel("step number");
+    #     axes[-1].set_xlabel("step number");
 
-        fig1.align_ylabels(axes)
-        fig1.subplots_adjust(hspace=0.1)
-        self.plt.tight_layout()
+    #     fig1.align_ylabels(axes)
+    #     fig1.subplots_adjust(hspace=0.1)
+    #     self.plt.tight_layout()
 
-        if figpath != None:
-            self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.png')), dpi=300)
-            self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.pdf')))
+    #     if figpath != None:
+    #         self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.png')), dpi=300)
+    #         self.plt.savefig(self.os.path.join(figpath, (self.file + '_mcmc_walkers.pdf')))
 
-        self.plt.show()
+    #     self.plt.show()
 
-        print("Calculating autocorrelation times...")
-        # get autocorrelation time
-        self.bayesian_result["tau"]= sampler.get_autocorr_time()
-        print(self.bayesian_result["tau"])
+    #     print("Calculating autocorrelation times...")
+    #     # get autocorrelation time
+    #     self.bayesian_result["tau"]= sampler.get_autocorr_time()
+    #     print(self.bayesian_result["tau"])
 
-        flat_samples = sampler.get_chain(discard=2* int(self.np.max(self.bayesian_result["tau"])), thin=15, flat=True)
+    #     # catch error for long auto correlation time
+    #     #TBD
 
-        print("Generating corner plots...")
-        # plot parameter distributions
-        fig2 = self.corner.corner(
-            flat_samples, labels=labels, truths=[
-                    self.result['leastsq'].best_values['Gamma'], 
-                    self.result['leastsq'].best_values['tau0'], 
-                    self.result['leastsq'].best_values['f0'], 
-                    self.result['leastsq'].best_values['baseline']
-                    ])
-        if figpath != None:
-            fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.png')), dpi=300)
-            fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.pdf')))
+    #     flat_samples = sampler.get_chain(discard=2* int(self.np.max(self.bayesian_result["tau"])), thin=15, flat=True)
+
+    #     print("Generating corner plots...")
+    #     # plot parameter distributions
+    #     fig2 = self.corner.corner(
+    #         flat_samples, labels=labels, truths=[
+    #                 self.result['leastsq'].best_values['Gamma'], 
+    #                 self.result['leastsq'].best_values['tau0'], 
+    #                 self.result['leastsq'].best_values['f0'], 
+    #                 self.result['leastsq'].best_values['baseline']
+    #                 ])
+    #     if figpath != None:
+    #         fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.png')), dpi=300)
+    #         fig2.savefig(self.os.path.join(figpath, (self.file + 'mcmc_corner.pdf')))
         
-        print("Done.")
+    #     print("Calculating credible intervals...")
+    #     # Gamma
+    #     self.CI_68_Gamma = [self.np.percentile(flat_samples[:,0], 16), self.np.percentile(flat_samples[:,0], 84)]
+    #     self.CI_95_Gamma = [self.np.percentile(flat_samples[:,0], 2.5), self.np.percentile(flat_samples[:,0], 97.5)]
+    #     print(f'Gamma [N s/m]:\n95% CI: [{self.CI_95_Gamma[0]:.3e}, {self.CI_95_Gamma[1]:.3e}] \n68% CI: [{self.CI_68_Gamma[0]:.3e},{self.CI_68_Gamma[1]:.3e}]')
+    #     # print('Gamma [N s/m]:', self.CI_95_Gamma,'(95%)', self.CI_68_Gamma,'(68%)')
+
+    #     # tau0
+    #     self.CI_68_tau0 = [self.np.percentile(flat_samples[:,1], 16), self.np.percentile(flat_samples[:,1], 84)]
+    #     self.CI_95_tau0 = [self.np.percentile(flat_samples[:,1], 2.5), self.np.percentile(flat_samples[:,1], 97.5)]
+    #     print(f'tau0 [ms]:\n95% CI: [{self.CI_95_tau0[0]:.3e}, {self.CI_95_tau0[1]:.3e}] \n68% CI: [{self.CI_68_tau0[0]:.3e},{self.CI_68_tau0[1]:.3e}]')
+    #     # print('tau0 [ms]:', self.CI_95_tau0,'(95%)', self.CI_68_tau0,'(68%)')
+
+    #     # f0
+    #     self.CI_68_f0 = [self.np.percentile(flat_samples[:,2], 16), self.np.percentile(flat_samples[:,2], 84)]
+    #     self.CI_95_f0 = [self.np.percentile(flat_samples[:,2], 2.5), self.np.percentile(flat_samples[:,2], 97.5)]
+    #     print(f'f0 [kHz]:\n95% CI: [{self.CI_95_f0[0]:.4e}, {self.CI_95_f0[1]:.4e}] \n68% CI: [{self.CI_68_f0[0]:.4e},{self.CI_68_f0[1]:.4e}]')
+    #     # print('f0 [kHz]:', self.CI_95_f0,'(95%)', self.CI_68_f0,'(68%)')
+
+    #     # baseline
+    #     self.CI_68_baseline = [self.np.percentile(flat_samples[:,3], 16), self.np.percentile(flat_samples[:,3], 84)]
+    #     self.CI_95_baseline = [self.np.percentile(flat_samples[:,3], 2.5), self.np.percentile(flat_samples[:,3], 97.5)]
+    #     print(f'baseline [nm^2/Hz]:\n95% CI: [{self.CI_95_baseline[0]:.3e}, {self.CI_95_baseline[1]:.3e}] \n68% CI: [{self.CI_68_baseline[0]:.3e},{self.CI_68_baseline[1]:.3e}]')
+    #     # print('baseline [nm^2/Hz]:', self.CI_95_baseline,'(95%)', self.CI_68_baseline,'(68%)')
+
+    #     print("Done.")

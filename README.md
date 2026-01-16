@@ -1,29 +1,36 @@
 ---
-title: MRFM_BrownianFit 1.1.0
+title: MRFM_BrownianFit 1.1.1
 date: 08/5/2025
 ---
 
 The brownian fit package has been built to enable the extraction of cantilever parameters
 from the position fluctuation power spectrum for MRFM cantilevers. The current version
-houses two modules: brownian_fit and LabView_int. The brownian_fit module has functions
-defined for fitting and plotting brownian motion data. The LabView_int module has
-functions defined to convert input data into the format that the brownian_fit module
-expects.
+houses three modules: brownian_fit, LVprocessing, and MCMC. The brownian_fit module has functions
+defined for fitting and plotting brownian motion data, as well as functions for . The LVprocessing module has
+functions defined to convert input data from LabView into the format that the brownian_fit module
+expects. The MCMC module defines the functions needed to run additional bayesian inference such as
+sampling the log likelihood surface using emcee methods to find credible intervals.
 
 This package was built to run with python 3.9.12. The author recommends installing in a
 new virtual environment to protect any existing dependency installations.
 
+ Versions of LabView running 32-bit python will not be able to run methods in the MCMC module. The dependencies for this module are optional and can be installed with the package by adding the optional key word 'MCMC" (see installation below).
+
 ## Installation
-To install the package, run the following code in the root directory of the package folder:
+To install the package for general use, run the following code in the root directory of the package folder:
 
 '''
 pip install .
 '''
 
-TESTS ARE CURRENTLY NOT WORKING PLS SKIP
-Tests can be run by running pytest in the root directory of the package
-The tests simply verify that the code is running as expected by comparing the output of the
-example data to previously performed fits.
+To install the package with the optional dependencies for the MCMC module, run the following code in the root directory of the package folder:
+
+'''
+pip install .[MCMC]
+'''
+
+## Testing
+TBD
 
 ## brownian_fit
 

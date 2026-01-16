@@ -1,9 +1,12 @@
 ###################################################
 # LabVIEW_int.py
 # Defines the data class LVprocessing to format the brownian motion VI data to pass to brownian_fit.
-# Also generates a reoprt in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
+# Also generates a report in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
 # Author: Katrina L. Brown
 # 2025/05/20
+
+# Updated 2025/07/22
+# Updated 2026/01/15 KLB
 ###################################################
 
 class LVprocessing():
@@ -27,18 +30,19 @@ class LVprocessing():
     from datetime import datetime
     import os
     import warnings
+    import numpy as np
 
-    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None):
+    def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None, scale = False):
         
-        # raise ValueError(len(y), len(x))
-
         self.N_avg = N_avg
         self.temp = temp
         self.name = name
         self.x = x
         self.y = y
+
         self.path = path
-        self.save = str(self.os.path.join(path, name))
+
+        self.save = str(self.os.path.join(self.path, name))
 
         # print(fit_range_L, fit_range_U)
         
@@ -58,29 +62,46 @@ class LVprocessing():
             if (((fit_range_U == None) and (fit_range_L != None)) or ((fit_range_U != None) and (fit_range_L == None))):
                 self.warnings.warn("Both ends of the fit range must be specified, performing auto-fit")
             
-            self.fit_range_L = fit_range_L
-            self.fit_range_U = fit_range_U
+            self.fit_range_L = None
+            self.fit_range_U = None
+
+        self.scale = scale
 
     def _compile_for_fitting(self):
         """
         Puts data in properly formatted tuple to pass to brownian_fit
         """
+
+        if isinstance(self.x, self.np.ndarray):
+            hold_x = list(self.x)
+            self.x = hold_x
+            del hold_x
+            
+        if isinstance(self.y, self.np.ndarray):
+            hold_y = list(self.y)
+            self.y = hold_y
+            del hold_y
+
+        
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
         self._compile_for_fitting()
-        self.fit = self.brownian_fit(self.datatuple)
+
+        if self.scale == True:
+            self.fit = self.brownian_fit(self.datatuple, scale=self.scale)
+        else:
+            self.fit = self.brownian_fit(self.datatuple)
 
     def do_fit(self):
         """
         The do_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-        fit report can be found from self.result['brownian'].
+        fit report can be found from self.result['leastsq'].
         """
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        # self.fit._fit_power_spec()
         self.fit._four_pass_fit()
         self.fit._find_params()
 
@@ -88,7 +109,7 @@ class LVprocessing():
         """
         The plot_fit function will fit on the cantilever peak and store the resulting parameters of
         interest as self.k, self.Q, self.f0, self.force_noise, and self.detector_noise. The full
-        fit report can be found from self.result['brownian'].
+        fit report can be found from self.result['leastsq'].
         A .tex file is generated summarizing the result of the fit. Two figures are included: the 
         cantilever peak data and fit with normalized residuals below, and the cumulative distribution 
         function of the normalized residuals.
@@ -97,7 +118,6 @@ class LVprocessing():
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        # self.fit._fit_power_spec()
         self.fit._four_pass_fit()
         self.fit._find_params()
 
@@ -150,7 +170,7 @@ class LVprocessing():
                 doc.append(self.NoEscape("$f_0 =$ " + str(round(self.fit.f0,2)) + "$\pm$" + str(round(self.fit.f0_stderr, 2)) + " Hz"))
                 doc.append("\n")
                 #gamma with error - friction coefficent
-                doc.append(self.NoEscape("$\Gamma =$ " + str(round(self.fit.result['brownian'].best_values['Gamma'] * 1E12,5)) + "$\pm$" + str(round(self.fit.result['brownian'].params['Gamma'].stderr * 1E12,5)) + " pN s/m"))
+                doc.append(self.NoEscape("$\Gamma =$ " + str(round(self.fit.result['leastsq'].best_values['Gamma'] * 1E12,5)) + "$\pm$" + str(round(self.fit.result['leastsq'].params['Gamma'].stderr * 1E12,5)) + " pN s/m"))
                 doc.append("\n")
                 #Sx with error -(detector noise floor)
                 doc.append(self.NoEscape("$S_x =$ " + str(round(self.fit.Sx * 1E6,5)) + "$\pm$" + str(round(self.fit.Sx_stderr * 1E6, 5)) + " ${\mu m}^2$/Hz"))
@@ -189,7 +209,7 @@ class LVprocessing():
 
             #the fit report
             with doc.create(self.Subsection("LMFit Full Report")):
-                doc.append(self.NoEscape(self.fit.result['brownian'].fit_report()))
+                doc.append(self.NoEscape(self.fit.result['leastsq'].fit_report()))
 
         #section header - Plot fit w/residuals
         with doc.create(self.Section("Brownian Motion Fit Plot")):

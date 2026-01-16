@@ -1,11 +1,12 @@
 ###################################################
 # LabVIEW_int.py
 # Defines the data class LVprocessing to format the brownian motion VI data to pass to brownian_fit.
-# Also generates a reoprt in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
+# Also generates a report in the form of a .tex file which can be compiled using a LaTex compiler locally or online (i.e. via Overleaf).
 # Author: Katrina L. Brown
 # 2025/05/20
 
 # Updated 2025/07/22
+# Updated 2026/01/15 KLB
 ###################################################
 
 class LVprocessing():
@@ -30,21 +31,16 @@ class LVprocessing():
     import os
     import warnings
     import numpy as np
-    import re
 
     def __init__(self, N_avg:int, temp:float, x:list, y:list, name:str, path:str, fit_range_L=None, fit_range_U=None, scale = False):
         
-        # raise ValueError(len(y), len(x))
-
         self.N_avg = N_avg
         self.temp = temp
         self.name = name
         self.x = x
         self.y = y
 
-        path_hold = self.re.split(r'[/,\\]', path)
-        self.path = str(self.os.path.join(*path_hold))
-        del path_hold
+        self.path = path
 
         self.save = str(self.os.path.join(self.path, name))
 
@@ -106,7 +102,6 @@ class LVprocessing():
         self._call_fitting_class()
 
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
-        # self.fit._fit_power_spec()
         self.fit._four_pass_fit()
         self.fit._find_params()
 
