@@ -30,7 +30,9 @@ pip install .[MCMC]
 '''
 
 ## Testing
-TBD
+After installation, run the example NB in the example folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
+
+Tests for use with pytest are still under development.
 
 ## brownian_fit
 
