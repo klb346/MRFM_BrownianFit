@@ -19,7 +19,7 @@ class brownian_fit():
     The class defines functions to run the fit with all permutations of plot? and
     report? output.
 
-    There are two main functions to call that will call the necessary internal functions.
+    There are four main functions to call that will call the necessary internal functions.
 
     The plot_peak function will just plot the cantilever peak on a semilogy plot. This is a
     useful test that the code is extracting a good region of the power spectrum.
@@ -32,16 +32,15 @@ class brownian_fit():
     function, and the residuals plotted below.
 
     The residuals_CDF function will plot the cumulative distribution function of the normalized 4
-    residuals **on top of the expected CDF for a normal distribution
-
+    residuals with the expected CDF for a normal distribution for comparison.
     """
+
     #import libraries
     import matplotlib.pyplot as plt
     import numpy as np
     from lmfit import Model
     import math as m
     import os
-    # import scipy.stats as ss
     import scipy.special as ssp
 
     def __init__(self, data, scale = False):
@@ -83,7 +82,6 @@ class brownian_fit():
 
         self.scale = scale
         
-
     def _extract_peak(self, rangeL = None, rangeU = None):
         """
         The _extract_peak function extracts a 1000 Hz wide section of the input data
@@ -448,7 +446,7 @@ class brownian_fit():
     def max_likelihood(self, method = 'Nelder-Mead'):
         """
         The max_likelihood function will find the parameter values for Gamma tau0, f0, and the baseline that
-        corrpond to the maximum of the likelihood by solving for the minimum of -log(likelihood) using the
+        correspond to the maximum of the likelihood by solving for the minimum of -log(likelihood) using the
         scipy minimize function. The minimizer starts at the best fit values from lmfit and therefore one of
         the fitting functions within brownian_fit must be run before calling this function. The results are
         stored in a dictionary self.bayesian_result.
@@ -472,6 +470,8 @@ class brownian_fit():
                                 'f0': soln.x[2],
                                 'baseline': soln.x[3],
                                 'message': soln.message}                       
+
+    # The MCMC has been moved to a new module
 
     # def MCMC(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None):
     #     """

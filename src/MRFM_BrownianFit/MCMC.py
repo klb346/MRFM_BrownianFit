@@ -7,6 +7,10 @@
 ###################################################
 
 class MCMC():
+    '''
+    Docstring for MCMC
+    '''
+
     # import libraries
     from MRFM_BrownianFit.brownian_fit import brownian_fit as bf
     
@@ -28,30 +32,61 @@ class MCMC():
         raise
         
 
-    def __init__(self, fit_result):
+    def __init__(self, fit_result, ErrorHandling = True):
         print ("Initializing class MCMC...")
         self.fit_result = fit_result
+        self.ErrorHandling = ErrorHandling
+        self.proc_prog = 0
+
+        if ErrorHandling == True:
+            print("Auto error handling is turned on, error correcting steps will be run. This can be turned off by setting self.ErrorHandling to False")
+        else:
+            print("Auto error handling is turned off. This can be turned on by setting self.ErrorHandling to True")
 
 
-    def _run_walkers(self, pos, ndim, param_bounds, walkers, nsteps, progress, moves):
+    # def _run_walkers(self, pos, ndim, param_bounds, walkers, nsteps, progress, moves):
+    def _run_walkers(self):
+
+        # define inital state within 5% of leastsq fit best values
+        self.pos = self.bf.np.array([
+                self.fit_result.result['leastsq'].best_values['Gamma'], 
+                self.fit_result.result['leastsq'].best_values['tau0'], 
+                self.fit_result.result['leastsq'].best_values['f0'], 
+                self.fit_result.result['leastsq'].best_values['baseline']
+                ])*(1+0.05*self.bf.np.random.randn(self.walkers,4))            
+        # store ndim
+        nwalkers, ndim = self.pos.shape
+        self.ndim = ndim 
+        del nwalkers
 
         print("Running emcee sampler...")
         # print(param_bounds)
         # print(self.fit_result.x_trunc)
         # print(self.fit_result.y_trunc)
-        self.sampler = self.emcee.EnsembleSampler(walkers, ndim, self.fit_result._log_probability, moves = moves, args=(param_bounds, self.fit_result.x_trunc, self.fit_result.y_trunc))
-        
-        self.sampler.run_mcmc(initial_state=pos, nsteps=nsteps, progress=progress)
+        self.sampler = self.emcee.EnsembleSampler(self.walkers, self.ndim, self.fit_result._log_probability, moves = self.moves, args=(self.param_bounds, self.fit_result.x_trunc, self.fit_result.y_trunc))
+        self.sampler.run_mcmc(initial_state=self.pos, nsteps=self.nsteps, progress=self.progress)
 
-    def _plot_walkers(self, ndim, figpath):
+        # update progress var
+        self.proc_prog = 1
 
+    def _plot_walkers(self, figpath):
+
+        if self.proc_prog == 0:
+            print("Walkers must be run before plotting.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+
+                self._run_walkers()
+            else:
+                raise RuntimeError("Failed to plot walkers as sampler was not run.")
+                
         print("Plotting walkers...")
 
         # plot walker path
         fig1, axes = self.bf.plt.subplots(4, figsize=(6.50, 8.0), sharex=True)
         samples = self.sampler.get_chain()
         labels = ["Gamma", "tau0", "f0", "baseline"]
-        for i in range(ndim):
+        for i in range(self.ndim):
             ax = axes[i]
             ax.plot(samples[:, :, i], "k", alpha=0.3)
             ax.set_xlim(0, len(samples))
@@ -71,15 +106,76 @@ class MCMC():
         self.bf.plt.show()
 
     def _find_auto_corr_time(self):
+        
+        if self.proc_prog == 0:
+            print("Walkers must be run before autocorrelation times can be calculated.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+
+                self._run_walkers()
+            else:
+                raise RuntimeError("Failed to calculate autocorrelation times as sampler was not run.")
+
         print("Calculating autocorrelation times...")
-        # get autocorrelation time
+        # get autocorrelation time - catch error
+
         self.fit_result.bayesian_result["tau"]= self.sampler.get_autocorr_time()
+
         print(self.fit_result.bayesian_result["tau"])
 
         # catch error for long auto correlation time
         #TBD
 
+    def _flatten_samples(self):
+        
+        if self.proc_prog == 0:
+            print("Walkers must be run before samples can be flattened.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+
+                self._run_walkers()
+            else:
+                raise RuntimeError("Failed to flatten samples as sampler was not run.")
+
+        # get autocorrelation time - catch autocorr error
+        try:
+            self._find_auto_corr_time()
+        except self.emcee.autocorr.AutocorrError:
+            if self.ErrorHandling == True:
+                hold = self.nsteps
+                self.nsteps = hold*4
+                
+                self._run_walkers()
+                try:
+                    self._find_auto_corr_time()
+                except self.emcee.autocorr.AutocorrError:
+                    self.nsteps = hold
+                    return ValueError("Auto correlation times are too long. Try changing the move method.")
+                finally:
+                    del hold
+
+
+        # catch nan    
+        if any(self.bf.np.isnan(self.fit_result.bayesian_result["tau"])):
+            return ValueError("Autocorrelation times could not be calculated. Make sure that the bounds are set properly and try again.")
+
+        # flatten samples
+        print("Flattening samples...")
+        self.flat_samples = self.sampler.get_chain(discard=2* int(self.bf.np.max(self.fit_result.bayesian_result["tau"])), thin=15, flat=True)
+
+        # update progress var
+        self.proc_prog = 2
+
     def _gen_corner_plot(self, figpath):
+
+        # catch error if _flatten_samples has not been run
+        if self.proc_prog != 2:
+            print("Cannot generate corner plots without flattened sample array.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+                self._flatten_samples()
+            else:
+                raise RuntimeError("Failed to generate corner plot. Check that the sampler has been run and that the samples have been flattened")
 
         print("Generating corner plots...")
         # plot parameter distributions
@@ -96,6 +192,15 @@ class MCMC():
             fig2.savefig(self.bf.os.path.join(figpath, (self.fit_result.file + 'mcmc_corner.pdf')))
 
     def _credible_interval_68(self):
+        # catch error if _flatten_samples has not been run
+        if self.proc_prog != 2:
+            print("Cannot calculate credible interval without flattened sample array.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+                self._flatten_samples()
+            else:
+                raise RuntimeError("Failed to calculate credible interval. Check that the sampler has been run and that the samples have been flattened")
+            
         print(f"Calculating 68% credible intervals...")
         # Gamma
         CI_68_Gamma = [self.bf.np.percentile(self.flat_samples[:,0], 16), self.bf.np.percentile(self.flat_samples[:,0], 84)]
@@ -120,6 +225,15 @@ class MCMC():
         self.fit_result.bayesian_result["CI_68per_baseline"] = CI_68_baseline
 
     def _credible_interval_95(self):
+        # catch error if _flatten_samples has not been run
+        if self.proc_prog != 2:
+            print("Cannot calculate credible interval without flattened sample array.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+                self._flatten_samples()
+            else:
+                raise RuntimeError("Failed to calculate credible interval. Check that the sampler has been run and that the samples have been flattened")
+            
         print(f"Calculating 95% credible intervals...")
         # Gamma
         CI_95_Gamma = [self.bf.np.percentile(self.flat_samples[:,0], 2.5), self.bf.np.percentile(self.flat_samples[:,0], 97.5)]
@@ -144,12 +258,27 @@ class MCMC():
         self.fit_result.bayesian_result["CI_95per_baseline"] = CI_95_baseline
 
     def _credible_interval_n(self, n:int):
+        # catch error if _flatten_samples has not been run
+        if self.proc_prog != 2:
+            print("Cannot calculate credible interval without flattened sample array.")
+            if self.ErrorHandling == True:
+                print("Auto handling error...")
+                self._flatten_samples()
+            else:
+                raise RuntimeError("Failed to calculate credible interval. Check that the sampler has been run and that the samples have been flattened")
+
+        if n <=0 or n >=100:
+            raise ValueError("n must be between 0 and 100")
 
         if type(n) != int:
-            hold = n
-            n = int(hold)
-            del hold
-        
+            if type(n) == float:
+                hold = n
+                n = int(hold)
+                print("n must be an integer. Truncating "+str(hold)+" to "+str(n)+"%.")
+                del hold
+            else:
+                raise ValueError("n must be an integer")
+
         x=50-(n/2)
 
         print(f"Calculating {n}% credible intervals...")
@@ -175,46 +304,21 @@ class MCMC():
         self.fit_result.bayesian_result["CI_"+str(n)+"per_f0"] = self.CI_n_f0
         self.fit_result.bayesian_result["CI_"+str(n)+"per_baseline"] = self.CI_n_baseline
 
-    def run(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None, n=None, ErrorHandling = True):
+    def run(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None, n=None):
+        # save variables
+        self.param_bounds = param_bounds
+        self.walkers = walkers
+        self.nsteps = nsteps
+        self.progress = progress
+        self.moves = moves
         
-        # define inital state within 5% of leastsq fit best values
-        pos = self.bf.np.array([
-                self.fit_result.result['leastsq'].best_values['Gamma'], 
-                self.fit_result.result['leastsq'].best_values['tau0'], 
-                self.fit_result.result['leastsq'].best_values['f0'], 
-                self.fit_result.result['leastsq'].best_values['baseline']
-                ])*(1+0.05*self.bf.np.random.randn(walkers,4))            
-        # store ndim
-        nwalkers, ndim = pos.shape
-
-        del nwalkers
-
         # run sampler
-        self._run_walkers(pos, ndim, param_bounds, walkers, nsteps, progress, moves)
+        self._run_walkers()
 
         # plot walkers
-        self._plot_walkers(ndim, figpath)
+        self._plot_walkers(figpath)
 
-        # get autocorrelation time - catch error
-        self._find_auto_corr_time()
-        if any(self.bf.np.isnan(self.fit_result.bayesian_result["tau"])):
-            return ValueError("Autocorrelation times could not be calculated. Make sure that the bounds are set properly and try again.")
-        if int(self.bf.np.max(self.fit_result.bayesian_result["tau"])) > nsteps/2:
-            # rerun sampler if error handing is true
-            if ErrorHandling == True:
-                inc_nsteps = nsteps*4
-                
-                self._run_walkers(pos, ndim, param_bounds, walkers, inc_nsteps, progress, moves)
-
-                # plot walkers
-                self._plot_walkers(ndim, figpath)
-
-                if int(self.bf.np.max(self.fit_result.bayesian_result["tau"])) > inc_nsteps/2:
-                    # change method - to be implement, for now aborts
-                    return ValueError("Auto correlation times are too long. Try changing the move method.")
-
-        # flatten samples
-        self.flat_samples = self.sampler.get_chain(discard=2* int(self.bf.np.max(self.fit_result.bayesian_result["tau"])), thin=15, flat=True)
+        self._flatten_samples()
         
         # plot parameter distributions
         self._gen_corner_plot(figpath)
@@ -231,5 +335,7 @@ class MCMC():
             self._credible_interval_n(n)
 
         print("Done.")
+
+        
 
 
