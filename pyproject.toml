@@ -24,3 +24,4 @@ dependencies = [
 MCMC = ["tqdm", 
    "emcee",
    "corner",]
+JYPLAB = ["ipykernel"]

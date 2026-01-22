@@ -188,8 +188,8 @@ class MCMC():
                     self.fit_result.result['leastsq'].best_values['baseline']
                     ])
         if figpath != None:
-            fig2.savefig(self.bf.os.path.join(figpath, (self.fit_result.file + 'mcmc_corner.png')), dpi=300)
-            fig2.savefig(self.bf.os.path.join(figpath, (self.fit_result.file + 'mcmc_corner.pdf')))
+            fig2.savefig(self.bf.os.path.join(figpath, (self.fit_result.file + '_mcmc_corner.png')), dpi=300)
+            fig2.savefig(self.bf.os.path.join(figpath, (self.fit_result.file + '_mcmc_corner.pdf')))
 
     def _credible_interval_68(self):
         # catch error if _flatten_samples has not been run

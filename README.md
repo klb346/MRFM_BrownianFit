@@ -12,9 +12,9 @@ expects. The MCMC module defines the functions needed to run additional bayesian
 sampling the log likelihood surface using emcee methods to find credible intervals.
 
 This package was built to run with python 3.9.12. The author recommends installing in a
-new virtual environment to protect any existing dependency installations.
+new virtual environment with python 3.9.12 to protect any existing dependency installations. 
 
- Versions of LabView running 32-bit python will not be able to run methods in the MCMC module. The dependencies for this module are optional and can be installed with the package by adding the optional key word 'MCMC" (see installation below).
+Versions of LabView running 32-bit python will not be able to run methods in the MCMC module. The dependencies for this module are optional and can be installed with the package by adding the optional key word 'MCMC" (see installation below).
 
 ## Installation
 To install the package for general use, run the following code in the root directory of the package folder:
@@ -29,12 +29,18 @@ To install the package with the optional dependencies for the MCMC module, run t
 pip install .[MCMC]
 '''
 
+For Jupyter Lab Users, add the option JYPLAB or install ipykernel manually.
+
+'''
+pip install .[MCMC,JYLAB]
+'''
+
 ## Testing
-After installation, run the example NB in the example folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
+After installation, run the example NB in the example folder. It is necessary to open the notebook from the package folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
 
 Tests for use with pytest are still under development.
 
-## brownian_fit
+## brownian_fit Docs
 
 To use the brownian_fit class, import the class from the module as shown below
 
@@ -68,8 +74,8 @@ stored in a dictionary self.bayesian_result.
 
 
 ### Example plots:
-![An example plot from the fitting of the data in examples](examples\example_outputs\20250701_baysian_8avgs.png)
-![An example residual CDF plot from the fitting of the data in examples](examples\example_outputs\20250701_baysian_8avgs_residual_cdf.png)
+![An example plot from the fitting of the data in examples](examples\example_outputs\brownian_example_20250924.png)
+![An example residual CDF plot from the fitting of the data in examples](examples\example_outputs\brownian_example_20250924_residual_cdf.png)
 
 
 ## LabView_int
@@ -174,3 +180,10 @@ Find autocorrelation times of fit parameters. Needs to be run before _gen_corner
 _gen_corner_plot(self, figpath)
 '''
 Generates a corner plot showing the distribution of the fit parameters.
+
+### Example plots
+
+![An example walker plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_mcmc_walkers.png)
+1[An example corner plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_mcmc_corner.png)
+
+
