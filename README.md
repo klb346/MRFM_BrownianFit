@@ -25,13 +25,13 @@ To install the package with the optional dependencies for the MCMC module, run t
 
 ```
 pip install .[MCMC]
-'''
+```
 
 For Jupyter Lab Users, add the option JYPLAB or install ipykernel manually.
 
-'''
+```
 pip install .[MCMC,JYLAB]
-'''
+```
 
 ## Testing
 After installation, run the example NB in the example folder. It is necessary to open the notebook from the package folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
