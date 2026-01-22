@@ -182,6 +182,6 @@ Generates a corner plot showing the distribution of the fit parameters.
 ### Example plots
 
 ![An example walker plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_mcmc_walkers.png)
-1[An example corner plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_mcmc_corner.png)
+![An example corner plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_mcmc_corner.png)
 
 
