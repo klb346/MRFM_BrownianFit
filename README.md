@@ -72,8 +72,8 @@ stored in a dictionary self.bayesian_result.
 
 
 ### Example plots:
-![An example plot from the fitting of the data in examples](examples\example_outputs\brownian_example_20250924.png)
-![An example residual CDF plot from the fitting of the data in examples](examples\example_outputs\brownian_example_20250924_residual_cdf.png)
+![An example plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924.png)
+![An example residual CDF plot from the fitting of the data in examples](examples/example_outputs/brownian_example_20250924_residual_cdf.png)
 
 
 ## LabView_int
