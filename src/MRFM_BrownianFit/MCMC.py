@@ -305,6 +305,18 @@ class MCMC():
         self.fit_result.bayesian_result["CI_"+str(n)+"per_baseline"] = self.CI_n_baseline
 
     def run(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None, n=None):
+        """
+        Docstring for run
+        
+        :param param_bounds: Description
+        :param walkers:  Description
+        :param nsteps: Description
+        :param progress: Description
+        :param moves: Description
+        :param figpath: Description
+        :param n: Description
+        """
+        
         # save variables
         self.param_bounds = param_bounds
         self.walkers = walkers
