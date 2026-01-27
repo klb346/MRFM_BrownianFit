@@ -14,14 +14,13 @@ dependencies = [
    "pytest",
    "scipy == 1.9.1",
    "lmfit == 1.3.2",
-   "pylatex",
-   "h5py",
-   "tqdm"
+   "pylatex"
 
 ]
 
 [project.optional-dependencies]
 MCMC = ["tqdm", 
    "emcee",
-   "corner",]
+   "corner",
+   "h5py"]
 JYPLAB = ["ipykernel"]
