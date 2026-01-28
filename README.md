@@ -12,7 +12,7 @@ sampling the log likelihood surface using emcee methods to find credible interva
 This package was built to run with python 3.9.12. The author recommends installing in a
 new virtual environment with python 3.9.12 to protect any existing dependency installations. 
 
-Versions of LabView running 32-bit python will not be able to run methods in the MCMC module. The dependencies for this module are optional and can be installed with the package by adding the optional key word 'MCMC" (see installation below).
+Versions of LabView running 32-bit python will not be able to run methods in the MCMC module. The dependencies for this module are optional and can be installed with the package by adding the optional key word 'MCMC" (see installation below). Versions of LabView running 32-bit python will not be able to run the test notebook as it requires h5py
 
 ## Installation
 To install the package for general use, run the following code in the root directory of the package folder:
@@ -34,7 +34,7 @@ pip install .[MCMC,JYLAB]
 ```
 
 ## Testing
-After installation, run the example NB in the example folder. It is necessary to open the notebook from the package folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
+After installation, run the example NB in the example folder. Note that you will need to have installed h5py to read the sample data. If you are running 32-bit python...It is necessary to open the notebook from the package folder. Outputs can be compared to the html run 01/16/2026 by KLB in the example_outputs folder.
 
 Tests for use with pytest are still under development.
 
