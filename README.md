@@ -81,7 +81,7 @@ stored in a dictionary self.bayesian_result.
 To use the LVprocessing class, import the class from the module as shown below
 
 ```
-from MRFM_BrownianFit.LabView_int import LVprocessing
+from MRFM_BrownianFit.LabVIEW_int import LVprocessing
 ```
 
 The LVprocessing class takes the following arguments:
