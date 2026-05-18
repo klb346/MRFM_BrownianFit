@@ -32,11 +32,12 @@ class MCMC():
         raise
         
 
-    def __init__(self, fit_result, ErrorHandling = True):
+    def __init__(self, fit_result, ErrorHandling = True, randFactor = 0.05):
         print ("Initializing class MCMC...")
         self.fit_result = fit_result
         self.ErrorHandling = ErrorHandling
         self.proc_prog = 0
+        self.randFactor = randFactor
 
         if ErrorHandling == True:
             print("Auto error handling is turned on, error correcting steps will be run. This can be turned off by setting self.ErrorHandling to False")
@@ -45,15 +46,19 @@ class MCMC():
 
 
     # def _run_walkers(self, pos, ndim, param_bounds, walkers, nsteps, progress, moves):
-    def _run_walkers(self):
+    def _run_walkers(self, pos = None):
 
-        # define inital state within 5% of leastsq fit best values
-        self.pos = self.bf.np.array([
-                self.fit_result.result['leastsq'].best_values['Gamma'], 
-                self.fit_result.result['leastsq'].best_values['tau0'], 
-                self.fit_result.result['leastsq'].best_values['f0'], 
-                self.fit_result.result['leastsq'].best_values['baseline']
-                ])*(1+0.05*self.bf.np.random.randn(self.walkers,4))            
+        # define inital state within 5% of leastsq fit best values if no POS given
+        if pos == None:
+            self.pos = self.bf.np.array([
+                    self.fit_result.result['leastsq'].best_values['Gamma'], 
+                    self.fit_result.result['leastsq'].best_values['tau0'], 
+                    self.fit_result.result['leastsq'].best_values['f0'], 
+                    self.fit_result.result['leastsq'].best_values['baseline']
+                    ])*(1+self.randFactor*self.bf.np.random.randn(self.walkers,4))
+        else:
+            self.pos = pos   
+                        
         # store ndim
         nwalkers, ndim = self.pos.shape
         self.ndim = ndim 
