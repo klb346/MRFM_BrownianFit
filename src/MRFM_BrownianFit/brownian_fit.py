@@ -169,10 +169,13 @@ class brownian_fit():
 
         P(f) = (kT * tau0^2 / Gamma)*(1 / ((F0^2-F^2)^2 + F^2)) with units of [pm^2/Hz] 
         **tau0 is converted to s for the unitless equation, introducing a factor of 10^-6.
+
+        05/19/2026 units rechecked KLB
+
         """
 
         kT = 1.38*10**(-23) * self.temp    # N m
-        F = self.np.pi * tau0 * f         # unitless
+        F = self.np.pi * tau0 * f       # unitless
         F0 = self.np.pi * tau0 * f0       # unitless
 
         prefactor = 10**18 * (kT * tau0**2 / Gamma)
@@ -197,11 +200,12 @@ class brownian_fit():
             f0_init = self.x_trunc[f0_idx]
 
         #initialize the parameters for lmfit
-        params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200)
+        params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200, baseline = self.noise_floor_est)
+        params['baseline'].vary = False
 
         #run the fit
         self.result = {}
-        self.result['pass1'] = gmodeli.fit(self.y_trunc, params, f=self.x_trunc, weights=w, baseline=self.noise_floor_est)
+        self.result['pass1'] = gmodeli.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
 
     def _fit_power_spec(self, w=[]):
         """
@@ -258,6 +262,29 @@ class brownian_fit():
         self.x_range = self.np.linspace(-10,10,10000)
         self.norm_cdf = (1 + self.ssp.erf(self.x_range/self.np.sqrt(2)))/2
 
+    def _fit_fixed_baseline(self, w=[]):
+        #run fit
+        gmodeli = self.Model(self._brownian)
+        if len(w)==0:
+            y_err = self.y_trunc/self.np.sqrt(self.N_avgs)
+            w = 1/y_err
+
+        #define initial guess of resonance frequency and noise floor
+        self.noise_floor_est = 0.00
+    
+        f0_idx, = self.np.where(self.np.isclose(self.y_trunc,self.np.max(self.y_trunc)))
+        if isinstance(f0_idx, self.np.ndarray):
+            f0_init = self.x_trunc[f0_idx[0]]
+        else:
+            f0_init = self.x_trunc[f0_idx]
+
+        #initialize the parameters for lmfit
+        params = gmodeli.make_params(Gamma=1E-11, f0=f0_init, tau0=200, baseline = self.noise_floor_est)
+        params['baseline'].vary = False
+
+        #run the fit
+        self.result = {}
+        self.result['fixed_baseline'] = gmodeli.fit(self.y_trunc, params, f=self.x_trunc, weights=w)
 
     def _four_pass_fit(self):
         if self.scale == True:
