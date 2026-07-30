@@ -10,7 +10,13 @@
 ###################################################
 
 class LVprocessing():
+    '''
+    The LVprocessing class is a wrapper for fitting brownian data using the brownian_fit module. 
+    Input data is converted to the correct data types before calling the brownian_fit class.
 
+    Frequency should be given in Hz and the PSD should be given in $nm^2/hz$
+    
+    '''
     #import libraries
     from MRFM_BrownianFit.brownian_fit import brownian_fit
     from pylatex import (
@@ -82,7 +88,7 @@ class LVprocessing():
             self.y = hold_y
             del hold_y
 
-        
+        # data is 
         self.datatuple = tuple((self.N_avg, self.temp, self.x, self.y, self.name))
 
     def _call_fitting_class(self):
@@ -120,6 +126,8 @@ class LVprocessing():
         self.fit._extract_peak(rangeL=self.fit_range_L, rangeU=self.fit_range_U)
         self.fit._four_pass_fit()
         self.fit._find_params()
+
+        self.fit.max_likelihood()
 
         ##build the report using pylatex
         doc = self.Document(self.save, geometry_options = {"right": "2cm", "left": "2cm"})
@@ -224,4 +232,7 @@ class LVprocessing():
                 self.fit.residuals_CDF(figpath = self.path)
                 plot.add_image(filename = self.save + "_residual_cdf.png", width = self.NoEscape(r"1\textwidth"))
         
+        #section header - Max Logliklihood
+
+
         doc.generate_tex(self.save)
