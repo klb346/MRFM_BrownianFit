@@ -48,16 +48,7 @@ class MCMC():
     # def _run_walkers(self, pos, ndim, param_bounds, walkers, nsteps, progress, moves):
     def _run_walkers(self, pos = None):
 
-        # define inital state within 5% of leastsq fit best values if no POS given
-        if pos == None:
-            self.pos = self.bf.np.array([
-                    self.fit_result.result['leastsq'].best_values['Gamma'], 
-                    self.fit_result.result['leastsq'].best_values['tau0'], 
-                    self.fit_result.result['leastsq'].best_values['f0'], 
-                    self.fit_result.result['leastsq'].best_values['baseline']
-                    ])*(1+self.randFactor*self.bf.np.random.randn(self.walkers,4))
-        else:
-            self.pos = pos   
+          
                         
         # store ndim
         nwalkers, ndim = self.pos.shape
@@ -309,7 +300,7 @@ class MCMC():
         self.fit_result.bayesian_result["CI_"+str(n)+"per_f0"] = self.CI_n_f0
         self.fit_result.bayesian_result["CI_"+str(n)+"per_baseline"] = self.CI_n_baseline
 
-    def run(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None, n=None):
+    def run(self, param_bounds, walkers = 64, nsteps = 2000, progress = True, moves = emcee.moves.KDEMove(bw_method="silverman"), figpath = None, n=None, pos = None):
         """
         Docstring for run
         
@@ -328,6 +319,19 @@ class MCMC():
         self.nsteps = nsteps
         self.progress = progress
         self.moves = moves
+        
+
+        # define initial state within 5% of leastsq fit best values if no POS given
+        try:
+            if pos == None:
+                self.pos = self.bf.np.array([
+                        self.fit_result.result['leastsq'].best_values['Gamma'], 
+                        self.fit_result.result['leastsq'].best_values['tau0'], 
+                        self.fit_result.result['leastsq'].best_values['f0'], 
+                        self.fit_result.result['leastsq'].best_values['baseline']
+                        ])*(1+self.randFactor*self.bf.np.random.randn(self.walkers,4))
+        except:
+            self.pos = pos
         
         # run sampler
         self._run_walkers()
